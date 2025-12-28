@@ -1,0 +1,204 @@
+/* --- הגדרות בסיס (משותפות לכולם) --- */
+.board-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  flex: 1;
+  min-height: 0;
+  padding: 10px;
+  box-sizing: border-box;
+}
+
+/* המיכל הראשי */
+.game-layout {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* ברירת מחדל למחשב: שורה (אחד ליד השני) */
+  flex-direction: row; 
+  gap: 40px;
+  width: 100%;
+  height: 100%;
+}
+
+/* --- עיצוב הלוח --- */
+.board {
+  display: grid;
+  background-color: rgba(255, 255, 255, 0.1);
+  padding: 10px;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+
+  /* גודל למחשב */
+  width: 42vmin;
+  height: 42vmin;
+  aspect-ratio: 1 / 1;
+  
+  max-width: 500px;
+  max-height: 500px;
+  
+  /* חשוב מאוד ל-10x10 */
+  grid-auto-rows: unset; 
+  gap: 5px;
+}
+
+/* --- עיצוב המשבצות --- */
+.cell {
+  background-color: rgba(255, 255, 255, 0.85);
+  border: none;
+  border-radius: 4px;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-weight: bold;
+  cursor: pointer;
+  color: #333;
+  padding: 0;
+  margin: 0;
+  line-height: 1;
+  
+  /* פונט שמתאים את עצמו */
+  font-size: clamp(0.6rem, 4vmin, 2.5rem);
+  box-shadow: inset 0 -2px 0 rgba(0,0,0,0.15);
+  transition: transform 0.1s;
+}
+
+.cell:hover:not(:disabled) {
+  background-color: #fff;
+  transform: scale(1.05);
+  z-index: 10;
+}
+
+.cell.taken {
+  cursor: default;
+  background-color: #d1d1d1;
+  color: #555;
+  box-shadow: none;
+}
+
+.cell.win-cell {
+  background-color: #4cc9f0 !important;
+  color: white !important;
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+
+/* --- עיצוב הפאנל הצדדי (כפתורים וסטטוס) --- */
+.side-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  background: rgba(0,0,0,0.25);
+  padding: 25px;
+  border-radius: 16px;
+  min-width: 180px;
+  backdrop-filter: blur(5px);
+}
+
+.status {
+  font-size: 1.4rem;
+  font-weight: bold;
+  color: #fff;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+  text-align: center;
+}
+
+.player-indicator {
+  color: #8f94fb;
+  font-size: 2.8rem;
+  display: block;
+  margin-top: 5px;
+}
+
+.winner-msg {
+  color: #4cc9f0;
+  font-size: 1.2rem;
+}
+
+.reset-btn {
+  padding: 12px 24px;
+  background: linear-gradient(45deg, #4cc9f0, #4895ef);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 1.1rem;
+  font-weight: bold;
+  cursor: pointer;
+  box-shadow: 0 4px 15px rgba(72, 149, 239, 0.4);
+  transition: all 0.2s ease;
+  width: 100%;
+}
+
+.reset-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(72, 149, 239, 0.6);
+}
+
+
+/* ========================================= */
+/* החלק הקסום: התאמה לטלפונים!       */
+/* ========================================= */
+
+@media (max-width: 850px) {
+  
+  /* 1. משנים את הכיוון: במקום שורה, הופכים לעמודה */
+  .game-layout {
+    flex-direction: column;
+    gap: 15px; /* פחות רווח כדי לחסוך מקום */
+    justify-content: flex-start;
+  }
+
+  /* 2. מגדילים את הלוח שיתפוס כמעט את כל רוחב הטלפון */
+  .board {
+    width: 85vmin;  /* רחב וגדול */
+    height: 85vmin; /* ריבוע */
+    max-width: 400px;
+    max-height: 400px;
+    padding: 5px; /* פחות ריפוד */
+    gap: 3px; /* רווחים קטנים יותר בין המשבצות בנייד */
+  }
+
+  /* 3. משנים את הפאנל: במקום עמודה ארוכה, עושים שורה קומפקטית למטה */
+  .side-panel {
+    width: 90%; /* תופס רוחב מלא */
+    max-width: 400px;
+    flex-direction: row; /* שמים את הסטטוס והכפתור אחד ליד השני */
+    justify-content: space-between; /* מרווח ביניהם */
+    padding: 10px 20px;
+    min-height: 60px;
+  }
+
+  /* 4. מתאימים את הטקסטים שייכנסו יפה */
+  .status {
+    font-size: 1rem;
+    text-align: right; /* יישור לימין בעברית */
+    line-height: 1.2;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .player-indicator {
+    font-size: 1.5rem;
+    display: inline; /* באותה שורה */
+    margin: 0;
+  }
+
+  /* 5. הכפתור לא תופס את כל הרוחב, אלא רק מה שצריך */
+  .reset-btn {
+    width: auto;
+    padding: 8px 16px;
+    font-size: 0.9rem;
+  }
+}

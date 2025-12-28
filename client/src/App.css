@@ -1,0 +1,70 @@
+html, body, #root {
+  height: 100%;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden; /* מונע גלילה - הכל ייכנס במסך אחד */
+  box-sizing: border-box;
+  background: radial-gradient(circle at center, #3a3a52 0%, #1a1a1a 100%);
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.app-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh; /* גובה מסך מלא */
+  width: 100%;
+  padding: 10px;
+  gap: 10px; /* רווח קטן בין האלמנטים כדי לחסוך מקום */
+}
+
+h1 {
+  margin: 0;
+  font-size: 2.2rem; /* כותרת בגודל פרופורציונלי */
+  color: white;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+  margin-bottom: 5px;
+}
+
+/* עיצוב כפתורי השליטה - קומפקטי יותר */
+.controls {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  background: rgba(0,0,0,0.2);
+  padding: 8px 15px;
+  border-radius: 12px;
+}
+
+.control-label {
+  color: #e0e0e0;
+  margin-right: 8px;
+  font-size: 0.9rem;
+}
+
+button {
+  padding: 8px 16px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  background-color: rgba(26, 26, 26, 0.8);
+  color: white;
+  border: 1px solid #646cff;
+  border-radius: 6px;
+  transition: all 0.2s ease-in-out;
+}
+
+button:hover {
+  background-color: #646cff;
+}
+
+button.active {
+  background-color: #646cff !important;
+  color: white;
+  border: 1px solid #aeb2ff;
+  box-shadow: 0 0 10px rgba(100, 108, 255, 0.5);
+  font-weight: bold;
+}
