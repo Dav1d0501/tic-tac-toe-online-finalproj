@@ -14,6 +14,9 @@ const AuthPage = () => {
   
   const navigate = useNavigate();
 
+  // --- התיקון: הגדרת כתובת השרת בצורה דינמית ---
+  const API_URL = import.meta.env.VITE_SERVER_URL || "http://localhost:3001";
+
   // --- לוגיקה 1: התחברות רגילה (סיסמה ושם) ---
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -21,13 +24,13 @@ const AuthPage = () => {
 
     const endpoint = isLogin ? 'login' : 'register';
     
-    // אם זה הרשמה - שולחים גם אימייל. אם התחברות - רק שם וסיסמה
     const payload = isLogin 
       ? { username, password } 
       : { username, email, password };
 
     try {
-      const response = await fetch(`http://localhost:3001/api/users/${endpoint}`, {
+      // שימוש ב-API_URL במקום לוקהוסט
+      const response = await fetch(`${API_URL}/api/users/${endpoint}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -41,18 +44,18 @@ const AuthPage = () => {
         setMessage(data.message || 'Something went wrong');
       }
     } catch (error) {
+      console.error("Login Error:", error);
       setMessage('Server error. Is backend running?');
     }
   };
 
   const handleGoogleSuccess = async (credentialResponse) => {
     try {
-      // פענוח המידע שגוגל שלחו לנו
       const decoded = jwtDecode(credentialResponse.credential);
       console.log("Google Info:", decoded);
 
-      // שליחת המידע לשרת שלנו ליצירת משתמש/התחברות
-      const response = await fetch('http://localhost:3001/api/users/google-login', {
+      // שימוש ב-API_URL גם כאן
+      const response = await fetch(`${API_URL}/api/users/google-login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -78,13 +81,11 @@ const AuthPage = () => {
     }
   };
 
-  // פונקציית עזר לטיפול בהצלחה (משותפת לשניהם)
+  // פונקציית עזר לטיפול בהצלחה
   const handleSuccess = (userData) => {
     setMessage(`Success! Welcome ${userData.username}`);
-    // שמירת המשתמש בזיכרון הדפדפן
     localStorage.setItem('user', JSON.stringify(userData));
     
-    // מעבר לדף הבית אחרי שנייה וחצי
     setTimeout(() => {
       navigate('/');
     }, 1500);
@@ -96,7 +97,6 @@ const AuthPage = () => {
 
       <div className="card" style={{ padding: '2rem', width: '300px', margin: '0 auto' }}>
         
-        {/* --- הטופס הרגיל --- */}
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           
           <input
@@ -108,7 +108,6 @@ const AuthPage = () => {
             required
           />
           
-          {/* שדה אימייל - מופיע רק בהרשמה */}
           {!isLogin && (
             <input
               type="email"
@@ -134,14 +133,12 @@ const AuthPage = () => {
           </button>
         </form>
 
-        {/* --- קו מפריד --- */}
         <div style={{ display: 'flex', alignItems: 'center', margin: '20px 0' }}>
           <div style={{ flex: 1, height: '1px', background: '#ccc' }}></div>
           <span style={{ padding: '0 10px', color: '#666', fontSize: '0.8rem' }}>OR</span>
           <div style={{ flex: 1, height: '1px', background: '#ccc' }}></div>
         </div>
 
-        {/* --- כפתור גוגל --- */}
         <div style={{ display: 'flex', justifyContent: 'center' }}>
           <GoogleLogin
             onSuccess={handleGoogleSuccess}
@@ -155,14 +152,12 @@ const AuthPage = () => {
           />
         </div>
 
-        {/* --- הודעות שגיאה/הצלחה --- */}
         {message && (
           <div style={{ marginTop: '15px', color: message.includes('Success') ? '#4cc9f0' : '#ff4d4d', fontWeight: 'bold' }}>
             {message}
           </div>
         )}
 
-        {/* --- מעבר בין התחברות להרשמה --- */}
         <p style={{ marginTop: '20px', fontSize: '0.9rem' }}>
           {isLogin ? "Don't have an account? " : "Already have an account? "}
           <span 
