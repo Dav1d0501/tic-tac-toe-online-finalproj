@@ -7,7 +7,11 @@ import AuthPage from './Pages/AuthPage';
 import Lobby from './Pages/Lobby'; 
 import './App.css';
 
-const socket = io.connect("http://localhost:3001");
+// --- התיקון הקריטי כאן ---
+// אנחנו בודקים: האם יש כתובת שרת במשתני הסביבה? אם כן - קח אותה. אם לא - קח את לוקהוסט.
+const SOCKET_URL = import.meta.env.VITE_SERVER_URL || "http://localhost:3001";
+const socket = io.connect(SOCKET_URL);
+// -----------------------
 
 const ProtectedRoute = ({ children }) => {
   const user = localStorage.getItem('user');
@@ -39,12 +43,11 @@ function App() {
           } 
         />
         
-        {/* דף הלובי מוגן - הוספנו אותו כאן */}
+        {/* דף הלובי מוגן */}
         <Route 
           path="/lobby" 
           element={
             <ProtectedRoute>
-              {/* מעבירים את ה-socket ללובי כדי שיוכל ליצור חדרים */}
               <Lobby socket={socket} />
             </ProtectedRoute>
           } 
