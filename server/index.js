@@ -42,7 +42,7 @@ io.on('connection', (socket) => {
       broadcastRoomList();
   });
 
-  // --- פונקציית עזר לעזיבה ---
+  // --- פונקציית עזר לעזיבה --
   const handlePlayerLeave = (roomId) => {
       const room = rooms[roomId];
       if (!room) return;
