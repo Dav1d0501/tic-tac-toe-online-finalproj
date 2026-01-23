@@ -3,22 +3,20 @@ import { checkWinner } from '../utils/gameLogic';
 import { getBestMove } from '../utils/computerAI'; 
 import './Board.css';
 
-// הוספנו את myRole לרשימת המשתנים שהפונקציה מקבלת
 const Board = ({ size, gameMode, difficulty, starter, socket, room, isHost, myRole }) => { 
   
   const [board, setBoard] = useState(Array(size * size).fill(null));
   const [isXNext, setIsXNext] = useState(true);
   const [winner, setWinner] = useState(null);
 
-  // אתחול התפקיד: אם קיבלנו myRole (מהלובי), נשתמש בו. אחרת null.
+  // Initialize online role (synced with Lobby)
   const [myOnlineSymbol, setMyOnlineSymbol] = useState(myRole || null); 
 
   const computerSymbol = starter === 'computer' ? 'X' : 'O';
 
-  // 1. איפוס לוח בעת שינוי הגדרות
+  // 1. Reset board on configuration change
   useEffect(() => {
     resetGameLocal();
-    // אם התחלנו משחק חדש לגמרי, נעדכן את התפקיד מחדש (חשוב למעברים)
     if (myRole) setMyOnlineSymbol(myRole);
   }, [size, gameMode, difficulty, starter, myRole]); 
 
@@ -28,12 +26,9 @@ const Board = ({ size, gameMode, difficulty, starter, socket, room, isHost, myRo
     setWinner(null);
   };
 
-  // 2. לוגיקת Socket למשחק אונליין
+  // 2. Socket Logic (Online Game)
   useEffect(() => {
     if (gameMode !== 'multiplayer' || !socket) return;
-
-    // מחקנו את handlePlayerRole כי השרת כבר לא שולח אותו בנפרד!
-    // אנחנו מקבלים את התפקיד ישר מה-props.
 
     const handleReceiveMove = (data) => {
       const moveIndex = data.index !== undefined ? data.index : data;
@@ -54,7 +49,7 @@ const Board = ({ size, gameMode, difficulty, starter, socket, room, isHost, myRo
     };
   }, [socket, gameMode, board, isXNext, winner]); 
 
-  // 3. לוגיקת מחשב (AI)
+  // 3. AI Logic (Computer Mode)
   useEffect(() => {
     const isComputerTurn = (isXNext && computerSymbol === 'X') || (!isXNext && computerSymbol === 'O');
 
@@ -67,7 +62,7 @@ const Board = ({ size, gameMode, difficulty, starter, socket, room, isHost, myRo
     }
   }, [isXNext, winner, gameMode, board, size, difficulty, computerSymbol]); 
 
-  // 4. ביצוע מהלך
+  // 4. Handle Move Logic
   const handleMove = (index, emitEvent = true) => {
     const newBoard = [...board];
     if (newBoard[index] || winner) return;
@@ -88,21 +83,18 @@ const Board = ({ size, gameMode, difficulty, starter, socket, room, isHost, myRo
     }
   };
 
-  // 5. טיפול בלחיצה
+  // 5. Handle User Click
   const handleCellClick = (index) => {
     if (board[index] || winner) return;
 
+    // Block interaction during Computer turn
     const isComputerTurn = (isXNext && computerSymbol === 'X') || (!isXNext && computerSymbol === 'O');
     if (gameMode === 'computer' && isComputerTurn) return;
 
+    // Block interaction if not user's turn (Online)
     if (gameMode === 'multiplayer') {
       const isMyTurn = (isXNext && myOnlineSymbol === 'X') || (!isXNext && myOnlineSymbol === 'O');
-      
-      // הוספתי לוגים כדי שנוכל לראות בדיוק למה זה נחסם (אם ייחסם)
-      if (!isMyTurn) {
-         console.log(`Blocked! My symbol: ${myOnlineSymbol}, Turn: ${isXNext ? 'X' : 'O'}`);
-         return; 
-      }
+      if (!isMyTurn) return; 
     }
 
     handleMove(index, true);
@@ -128,7 +120,6 @@ const Board = ({ size, gameMode, difficulty, starter, socket, room, isHost, myRo
         ) : (
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
               <span>תור: <span className="turn-indicator">{isXNext ? 'X' : 'O'}</span></span>
-              {/* מציג למשתמש מי הוא - זה יעזור לנו לוודא שהתיקון עבד */}
               {gameMode === 'multiplayer' && myOnlineSymbol && (
                  <span style={{ fontSize: '0.9rem', color: '#4cc9f0', fontWeight: 'bold' }}>
                    (You are {myOnlineSymbol})

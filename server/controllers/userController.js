@@ -1,18 +1,22 @@
 const User = require('../models/User');
 const bcrypt = require('bcryptjs');
 
+// --- 1. הרשמה רגילה ---
 const registerUser = async (req, res) => {
   try {
     const { username, email, password } = req.body;
 
+    // בדיקה אם המשתמש קיים
     const userExists = await User.findOne({ $or: [{ email }, { username }] });
     if (userExists) {
       return res.status(400).json({ message: 'User or Email already exists' });
     }
 
+    // הצפנת סיסמה
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
+    // יצירת משתמש
     const user = await User.create({
       username,
       email,
@@ -33,13 +37,15 @@ const registerUser = async (req, res) => {
   }
 };
 
+// --- 2. התחברות רגילה ---
 const loginUser = async (req, res) => {
   try {
     const { username, password } = req.body;
 
     const user = await User.findOne({ username });
 
-    if (user && (await bcrypt.compare(password, user.password))) {
+    // בודקים אם המשתמש קיים, אם יש לו סיסמה (למשתמשי גוגל אין), ואם הסיסמה תואמת
+    if (user && user.password && (await bcrypt.compare(password, user.password))) {
       res.json({
         _id: user.id,
         username: user.username,
@@ -53,13 +59,16 @@ const loginUser = async (req, res) => {
   }
 };
 
+// --- 3. התחברות/הרשמה עם Google ---
 const googleLogin = async (req, res) => {
   try {
     const { email, username, googleId } = req.body;
 
+    // בדיקה אם המשתמש כבר קיים לפי אימייל
     let user = await User.findOne({ email });
 
     if (user) {
+      // משתמש קיים - מחזירים פרטים
       res.json({
         _id: user.id,
         username: user.username,
@@ -67,13 +76,9 @@ const googleLogin = async (req, res) => {
         message: 'Google Login Successful'
       });
     } else {
-      // המשתמש לא קיים - ניצור אותו אוטומטית!
-      // נמציא לו סיסמה ארוכה ומסובכת כי הוא לא ישתמש בה לעולם
-      const randomPassword = Math.random().toString(36).slice(-8) + Math.random().toString(36).slice(-8);
-      const salt = await bcrypt.genSalt(10);
-      const hashedPassword = await bcrypt.hash(randomPassword, salt);
-
-      // ניסיון ליצור משתמש. אם השם תפוס, נוסיף לו מספרים
+      // משתמש חדש - יוצרים אותו (בלי סיסמה!)
+      
+      // טיפול בשם משתמש תפוס: אם "David" תפוס, נשנה ל-"David123"
       let finalUsername = username;
       const userNameExists = await User.findOne({ username });
       if (userNameExists) {
@@ -83,7 +88,8 @@ const googleLogin = async (req, res) => {
       user = await User.create({
         username: finalUsername,
         email,
-        password: hashedPassword,
+        googleId, 
+        // אין צורך בסיסמה כי הגדרנו במודל required: false
       });
 
       res.status(201).json({
@@ -98,4 +104,4 @@ const googleLogin = async (req, res) => {
   }
 };
 
-module.exports = { registerUser, loginUser, googleLogin};
+module.exports = { registerUser, loginUser, googleLogin };

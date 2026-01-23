@@ -6,6 +6,7 @@ const HomePage = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
 
+  // Retrieve user data on mount
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
     if (storedUser) {
@@ -15,13 +16,14 @@ const HomePage = () => {
 
   const handleLogout = () => {
     localStorage.removeItem('user');
-    window.location.reload();
+    // Refresh to clear state and trigger the ProtectedRoute redirect
+    window.location.reload(); 
   };
 
   return (
     <div className="app-container">
       
-      {/* סרגל עליון */}
+      {/* Top User Bar */}
       <div className="user-bar">
         <div className="user-info">
           Welcome, <span className="highlight">{user ? user.username : 'Guest'}</span>! 👋
@@ -38,11 +40,12 @@ const HomePage = () => {
         <button onClick={() => navigate('/game/local')} className="menu-btn">
           👥 Play Local (1 PC)
         </button>
+        
         <button onClick={() => navigate('/game/computer')} className="menu-btn">
           🤖 Play vs Computer
         </button>
         
-        {/* השינוי כאן: ניווט ללובי במקום למשחק ישירות */}
+        {/* Navigate to Lobby for Online play */}
         <button onClick={() => navigate('/lobby')} className="menu-btn">
           🌍 Play Online
         </button>

@@ -14,10 +14,10 @@ const AuthPage = () => {
   
   const navigate = useNavigate();
 
-  // --- התיקון: הגדרת כתובת השרת בצורה דינמית ---
+  // Dynamic API URL: Uses environment variable in production, localhost in dev
   const API_URL = import.meta.env.VITE_SERVER_URL || "http://localhost:3001";
 
-  // --- לוגיקה 1: התחברות רגילה (סיסמה ושם) ---
+  // --- 1. Standard Login/Register Handler ---
   const handleSubmit = async (e) => {
     e.preventDefault();
     setMessage('');
@@ -29,7 +29,6 @@ const AuthPage = () => {
       : { username, email, password };
 
     try {
-      // שימוש ב-API_URL במקום לוקהוסט
       const response = await fetch(`${API_URL}/api/users/${endpoint}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -49,12 +48,12 @@ const AuthPage = () => {
     }
   };
 
+  // --- 2. Google Login Handler ---
   const handleGoogleSuccess = async (credentialResponse) => {
     try {
       const decoded = jwtDecode(credentialResponse.credential);
       console.log("Google Info:", decoded);
 
-      // שימוש ב-API_URL גם כאן
       const response = await fetch(`${API_URL}/api/users/google-login`, {
         method: 'POST',
         headers: {
@@ -81,7 +80,7 @@ const AuthPage = () => {
     }
   };
 
-  // פונקציית עזר לטיפול בהצלחה
+  // Helper: Save user and redirect
   const handleSuccess = (userData) => {
     setMessage(`Success! Welcome ${userData.username}`);
     localStorage.setItem('user', JSON.stringify(userData));

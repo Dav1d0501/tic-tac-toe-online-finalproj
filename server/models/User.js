@@ -1,4 +1,3 @@
-// server/models/User.js
 const mongoose = require('mongoose');
 
 const userSchema = mongoose.Schema({
@@ -14,7 +13,10 @@ const userSchema = mongoose.Schema({
   },
   password: {
     type: String,
-    required: true,
+    required: false, // חייב להיות false כדי לאפשר התחברות עם גוגל
+  },
+  googleId: {
+    type: String, // שדה לזיהוי משתמשי גוגל
   },
   wins: {
     type: Number,

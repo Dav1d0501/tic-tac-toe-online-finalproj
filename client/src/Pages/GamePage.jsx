@@ -8,18 +8,20 @@ const GamePage = ({ socket }) => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // מקבלים את המידע הראשוני מהלובי
+  // Retrieve initial game state passed from Lobby
   const { room, size: onlineSize, isHost: initialIsHost, role } = location.state || {};
 
-  // הופכים את isHost ל-State כדי שנוכל לשנות אותו באמצע המשחק
+  // Local state for host status (can update if original host leaves)
   const [isHost, setIsHost] = useState(initialIsHost || false);
   
   const [localSize, setLocalSize] = useState(3);
   const [difficulty, setDifficulty] = useState('hard');
   const [starter, setStarter] = useState('user');
 
+  // Determine board size based on game mode
   const currentSize = mode === 'multiplayer' ? onlineSize : localSize;
 
+  // 1. Protect against page refresh in multiplayer (redirect to lobby if no room data)
   useEffect(() => {
     if (mode === 'multiplayer' && !room) {
       alert("Lost connection. Please join via Lobby.");
@@ -27,12 +29,12 @@ const GamePage = ({ socket }) => {
     }
   }, [mode, room, navigate]);
 
-  // האזנה לאירוע הפיכה למנהל
+  // 2. Handle Host Migration (If host leaves, server assigns new host)
   useEffect(() => {
     if (mode === 'multiplayer' && socket) {
         socket.on('you_are_host', () => {
             console.log("You are now the host!");
-            setIsHost(true); // עדכון הסטייט -> כפתור הריסט יופיע
+            setIsHost(true); // Enable reset button
             alert("The host left. You are now the host!");
         });
 
@@ -40,10 +42,10 @@ const GamePage = ({ socket }) => {
     }
   }, [socket, mode]);
 
-  // --- הפונקציה החדשה ליציאה מסודרת ---
+  // 3. Handle Safe Exit / Back Button
   const handleBack = () => {
       if (mode === 'multiplayer' && socket) {
-          // שליחת הודעה לשרת שאני עוזב את החדר
+          // Notify server that user is leaving
           if (room) {
               console.log("Leaving room:", room);
               socket.emit("leave_room", room);
@@ -63,7 +65,7 @@ const GamePage = ({ socket }) => {
   return (
     <div className="app-container">
       <button 
-        onClick={handleBack} // שימוש בפונקציה החדשה
+        onClick={handleBack}
         className="back-btn"
         style={{ alignSelf: 'flex-start', marginBottom: '10px' }}
       >
@@ -72,6 +74,7 @@ const GamePage = ({ socket }) => {
 
       <h1>{getTitle()}</h1>
       
+      {/* Local Game Settings (Size) */}
       {mode !== 'multiplayer' && (
         <div className="controls">
           <span className="control-label">Board Size:</span>
@@ -81,6 +84,7 @@ const GamePage = ({ socket }) => {
         </div>
       )}
 
+      {/* Computer Game Settings (Difficulty & Starter) */}
       {mode === 'computer' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', alignItems: 'center' }}>
           {currentSize === 3 && (

@@ -7,12 +7,14 @@ import AuthPage from './Pages/AuthPage';
 import Lobby from './Pages/Lobby'; 
 import './App.css';
 
-// --- התיקון הקריטי כאן ---
-// אנחנו בודקים: האם יש כתובת שרת במשתני הסביבה? אם כן - קח אותה. אם לא - קח את לוקהוסט.
+// Socket Connection Configuration
+// Selects the production URL from environment variables or defaults to localhost for development
 const SOCKET_URL = import.meta.env.VITE_SERVER_URL || "http://localhost:3001";
-const socket = io.connect(SOCKET_URL);
-// -----------------------
 
+// Initialize socket outside the component to prevent multiple connections during re-renders
+const socket = io.connect(SOCKET_URL);
+
+// Security Component: Restricts access to authenticated users only
 const ProtectedRoute = ({ children }) => {
   const user = localStorage.getItem('user');
   if (!user) {
@@ -22,6 +24,8 @@ const ProtectedRoute = ({ children }) => {
 };
 
 function App() {
+  
+  // Log connection status for debugging purposes
   useEffect(() => {
     socket.on("connect", () => {
       console.log("Connected to server with ID:", socket.id);
@@ -31,9 +35,10 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
+        {/* Public Route */}
         <Route path="/auth" element={<AuthPage />} />
 
-        {/* דף הבית מוגן */}
+        {/* Protected Routes */}
         <Route 
           path="/" 
           element={
@@ -43,7 +48,6 @@ function App() {
           } 
         />
         
-        {/* דף הלובי מוגן */}
         <Route 
           path="/lobby" 
           element={
@@ -53,7 +57,6 @@ function App() {
           } 
         />
 
-        {/* דף המשחק מוגן */}
         <Route 
           path="/game/:mode" 
           element={
