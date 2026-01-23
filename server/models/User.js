@@ -29,7 +29,11 @@ const userSchema = mongoose.Schema({
   friends: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User' 
-  }]
+  }],
+  isOnline: {
+    type: Boolean,
+    default: false // ברירת מחדל: לא מחובר
+  }
 }, {
   timestamps: true 
 });

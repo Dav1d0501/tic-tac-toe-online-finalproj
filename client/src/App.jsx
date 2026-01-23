@@ -8,13 +8,12 @@ import Lobby from './Pages/Lobby';
 import './App.css';
 
 // Socket Connection Configuration
-// Selects the production URL from environment variables or defaults to localhost for development
 const SOCKET_URL = import.meta.env.VITE_SERVER_URL || "http://localhost:3001";
 
-// Initialize socket outside the component to prevent multiple connections during re-renders
+// Initialize socket
 const socket = io.connect(SOCKET_URL);
 
-// Security Component: Restricts access to authenticated users only
+// Security Component
 const ProtectedRoute = ({ children }) => {
   const user = localStorage.getItem('user');
   if (!user) {
@@ -25,10 +24,16 @@ const ProtectedRoute = ({ children }) => {
 
 function App() {
   
-  // Log connection status for debugging purposes
   useEffect(() => {
     socket.on("connect", () => {
       console.log("Connected to server with ID:", socket.id);
+
+      // --- דיווח שהמשתמש מחובר ---
+      const user = JSON.parse(localStorage.getItem('user'));
+      if (user && user._id) {
+          socket.emit("user_connected", user._id);
+      }
+      // ----------------------------------------
     });
   }, []);
 

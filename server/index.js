@@ -5,6 +5,7 @@ const cors = require('cors');
 require('dotenv').config(); 
 const connectDB = require('./config/db'); 
 const userRoutes = require('./routes/userRoutes');
+const User = require('./models/User');
 
 // Connect to MongoDB
 connectDB();
@@ -26,8 +27,9 @@ const io = new Server(server, {
   },
 });
 
-// In-memory room storage
+// --- In-memory storage ---
 let rooms = {}; 
+let onlineUsers = {}; // Maps socket.id -> userId
 
 // Helper: Send room list to all clients
 const broadcastRoomList = () => {
@@ -45,32 +47,51 @@ io.on('connection', (socket) => {
   // Send initial room list
   broadcastRoomList();
 
-  // --- Room Management ---
+  // --- 1. User Online Status Management ---
+
+  socket.on("user_connected", async (userId) => {
+    if (userId) {
+      console.log(`User ${userId} is now Online`);
+      onlineUsers[socket.id] = userId;
+      
+      // Update DB: User is Online
+      try {
+        await User.findByIdAndUpdate(userId, { isOnline: true });
+      } catch (err) {
+        console.error("Error updating online status:", err);
+      }
+    }
+  });
+
+  // --- 2. Room Management ---
 
   socket.on('get_rooms', () => {
       broadcastRoomList();
   });
 
-  socket.on("create_room", ({ roomId, size }) => {
+  socket.on("create_room", ({ roomId, size, user }) => { // Updated to receive user data
     if (rooms[roomId]) {
         socket.emit("error_message", "Room already exists!");
         return;
     }
+    
     // Initialize new room
     rooms[roomId] = {
-        players: [socket.id],
-        playersRoles: { [socket.id]: "X" }, // Creator gets X
+        players: [],
         size: parseInt(size),
         hostId: socket.id, 
     };
-    socket.join(roomId);
-    
-    // Notify creator
-    socket.emit("room_joined", { role: "X", size: parseInt(size), isHost: true });
-    broadcastRoomList();
+
+    // Add host as first player
+    const userData = user || { _id: null, username: 'Guest' };
+    joinRoomLogic(socket, roomId, userData, true);
   });
 
-  socket.on("join_room", (roomId) => {
+  socket.on("join_room", (data) => {
+    // Support legacy calls (just roomId) or new calls (object with user data)
+    const roomId = typeof data === 'object' ? data.roomId : data;
+    const userData = typeof data === 'object' ? data.user : { _id: null, username: 'Guest' };
+
     const room = rooms[roomId];
     
     // Validation
@@ -84,28 +105,85 @@ io.on('connection', (socket) => {
         return;
     }
 
-    // Smart role assignment
-    const takenRoles = Object.values(room.playersRoles);
-    const newRole = takenRoles.includes("X") ? "O" : "X"; 
-
-    // Update room data
-    room.players.push(socket.id);
-    room.playersRoles[socket.id] = newRole; 
-    
-    socket.join(roomId);
-    
-    // Notify joiner
-    socket.emit("room_joined", { role: newRole, size: room.size, isHost: false });
-    
-    // Notify opponent
-    socket.to(roomId).emit("player_joined_room");
-    broadcastRoomList();
+    joinRoomLogic(socket, roomId, userData, false);
+  });
+  socket.on("req_opponent_data", (roomId) => {
+      const room = rooms[roomId];
+      if (room && room.players.length === 2) {
+          // מציאת היריב
+          const opponent = room.players.find(p => p.id !== socket.id);
+          
+          if (opponent) {
+             // שליחת המידע רק למי שביקש
+             socket.emit("opponent_data", { 
+                 _id: opponent.userId, 
+                 username: opponent.username 
+             });
+          }
+      }
   });
 
-  // --- Game Logic ---
+  // Helper function to handle joining logic
+  const joinRoomLogic = (socket, roomId, userData, isCreator) => {
+      const room = rooms[roomId];
+      
+      // Determine Role
+      const takenRoles = room.players.map(p => p.symbol);
+      const role = takenRoles.includes("X") ? "O" : "X";
+
+      // Add player to room object
+      room.players.push({
+          id: socket.id,
+          symbol: role,
+          userId: userData._id,
+          username: userData.username
+      });
+
+      socket.join(roomId);
+      
+      // Notify player
+      socket.emit("room_joined", { role: role, size: room.size, isHost: isCreator || room.hostId === socket.id });
+      
+      // If room is full, start game and exchange details
+      if (room.players.length === 2) {
+          io.to(roomId).emit("game_start", { msg: "Game Started!" });
+          
+          const p1 = room.players[0];
+          const p2 = room.players[1];
+
+          // Send opponent data to each player (for "Add Friend" feature)
+          io.to(p1.id).emit("opponent_data", { _id: p2.userId, username: p2.username });
+          io.to(p2.id).emit("opponent_data", { _id: p1.userId, username: p1.username });
+      }
+
+      broadcastRoomList();
+  };
+
+  // --- 3. Game Logic ---
 
   socket.on("send_move", (data) => {
     if (data.room) socket.to(data.room).emit("receive_move", data);
+  });
+
+  socket.on("game_over", async (data) => {
+      const { room, winnerSymbol } = data;
+      const currentRoom = rooms[room];
+
+      if (currentRoom && currentRoom.players.length === 2) {
+          const winner = currentRoom.players.find(p => p.symbol === winnerSymbol);
+          const loser = currentRoom.players.find(p => p.symbol !== winnerSymbol);
+
+          if (winner && loser && winner.userId && loser.userId) {
+              try {
+                  // Update Stats in DB
+                  await User.findByIdAndUpdate(winner.userId, { $inc: { wins: 1 } });
+                  await User.findByIdAndUpdate(loser.userId, { $inc: { losses: 1 } });
+                  console.log(`Stats updated: ${winner.username} won, ${loser.username} lost`);
+              } catch (err) {
+                  console.error("Error updating game stats:", err);
+              }
+          }
+      }
   });
 
   socket.on("reset_game", (roomId) => {
@@ -116,15 +194,17 @@ io.on('connection', (socket) => {
     }
   });
 
-  // --- Disconnect Handling ---
+  // --- 4. Disconnect Handling ---
 
   const handlePlayerLeave = (roomId) => {
       const room = rooms[roomId];
       if (!room) return;
 
-      // Remove player and role
-      room.players = room.players.filter(id => id !== socket.id);
-      delete room.playersRoles[socket.id]; 
+      // Find player index
+      const playerIndex = room.players.findIndex(p => p.id === socket.id);
+      if (playerIndex !== -1) {
+          room.players.splice(playerIndex, 1); // Remove player
+      }
 
       socket.leave(roomId);
 
@@ -138,7 +218,7 @@ io.on('connection', (socket) => {
           
           // Migrate host if needed
           if (room.hostId === socket.id) {
-              room.hostId = room.players[0]; 
+              room.hostId = room.players[0].id; 
               io.to(room.hostId).emit("you_are_host"); 
           }
       }
@@ -149,10 +229,21 @@ io.on('connection', (socket) => {
       handlePlayerLeave(roomId);
   });
 
-  socket.on('disconnect', () => {
-    // Find room the user was in
+  socket.on('disconnect', async () => {
+    // 1. Handle Online Status
+    const userId = onlineUsers[socket.id];
+    if (userId) {
+        try {
+            await User.findByIdAndUpdate(userId, { isOnline: false });
+        } catch (err) {
+            console.error("Error updating offline status:", err);
+        }
+        delete onlineUsers[socket.id];
+    }
+
+    // 2. Handle Room Leavings
     for (const roomId in rooms) {
-        if (rooms[roomId].players.includes(socket.id)) {
+        if (rooms[roomId].players.find(p => p.id === socket.id)) {
             handlePlayerLeave(roomId);
             break; 
         }

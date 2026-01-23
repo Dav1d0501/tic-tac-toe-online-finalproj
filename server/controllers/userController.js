@@ -1,107 +1,124 @@
 const User = require('../models/User');
 const bcrypt = require('bcryptjs');
 
-// --- 1. הרשמה רגילה ---
-const registerUser = async (req, res) => {
+// Register
+exports.registerUser = async (req, res) => {
   try {
     const { username, email, password } = req.body;
+    const existingUser = await User.findOne({ $or: [{ email }, { username }] });
+    if (existingUser) return res.status(400).json({ message: "User already exists" });
 
-    // בדיקה אם המשתמש קיים
-    const userExists = await User.findOne({ $or: [{ email }, { username }] });
-    if (userExists) {
-      return res.status(400).json({ message: 'User or Email already exists' });
-    }
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const newUser = new User({ username, email, password: hashedPassword });
+    await newUser.save();
 
-    // הצפנת סיסמה
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
-
-    // יצירת משתמש
-    const user = await User.create({
-      username,
-      email,
-      password: hashedPassword, 
-    });
-
-    if (user) {
-      res.status(201).json({
-        _id: user.id,
-        username: user.username,
-        message: 'User Registered Successfully'
-      });
-    } else {
-      res.status(400).json({ message: 'Invalid user data' });
-    }
+    res.status(201).json({ _id: newUser._id, username: newUser.username, wins: newUser.wins });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ message: "Server Error", error });
   }
 };
 
-// --- 2. התחברות רגילה ---
-const loginUser = async (req, res) => {
+// Login
+exports.loginUser = async (req, res) => {
   try {
     const { username, password } = req.body;
-
     const user = await User.findOne({ username });
 
-    // בודקים אם המשתמש קיים, אם יש לו סיסמה (למשתמשי גוגל אין), ואם הסיסמה תואמת
-    if (user && user.password && (await bcrypt.compare(password, user.password))) {
-      res.json({
-        _id: user.id,
-        username: user.username,
-        message: 'Login Successful'
-      });
-    } else {
-      res.status(401).json({ message: 'Invalid username or password' });
-    }
+    if (!user) return res.status(400).json({ message: "User not found" });
+    if (!user.password) return res.status(400).json({ message: "Please login with Google" });
+
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) return res.status(400).json({ message: "Invalid credentials" });
+
+    res.json({ 
+        _id: user._id, 
+        username: user.username, 
+        email: user.email,
+        wins: user.wins 
+    });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ message: "Server Error" });
   }
 };
 
-// --- 3. התחברות/הרשמה עם Google ---
-const googleLogin = async (req, res) => {
+// Google Login
+exports.googleLogin = async (req, res) => {
   try {
     const { email, username, googleId } = req.body;
-
-    // בדיקה אם המשתמש כבר קיים לפי אימייל
+    
     let user = await User.findOne({ email });
 
-    if (user) {
-      // משתמש קיים - מחזירים פרטים
-      res.json({
-        _id: user.id,
-        username: user.username,
-        email: user.email,
-        message: 'Google Login Successful'
+    if (!user) {
+      user = new User({ 
+          username, 
+          email, 
+          googleId,
+          password: "" 
       });
-    } else {
-      // משתמש חדש - יוצרים אותו (בלי סיסמה!)
-      
-      // טיפול בשם משתמש תפוס: אם "David" תפוס, נשנה ל-"David123"
-      let finalUsername = username;
-      const userNameExists = await User.findOne({ username });
-      if (userNameExists) {
-        finalUsername = username + Math.floor(Math.random() * 1000);
-      }
-
-      user = await User.create({
-        username: finalUsername,
-        email,
-        googleId, 
-        // אין צורך בסיסמה כי הגדרנו במודל required: false
-      });
-
-      res.status(201).json({
-        _id: user.id,
-        username: user.username,
-        email: user.email,
-        message: 'Google User Created Successfully'
-      });
+      await user.save();
     }
+
+    res.json({ 
+        _id: user._id, 
+        username: user.username, 
+        wins: user.wins
+    });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error(error);
+    res.status(500).json({ message: "Google Login Error" });
   }
 };
 
-module.exports = { registerUser, loginUser, googleLogin };
+// --- פונקציות חדשות (היו חסרות או לא מחוברות) ---
+
+// 1. Leaderboard
+exports.getLeaderboard = async (req, res) => {
+    try {
+        const leaderboard = await User.find({}, 'username wins losses isOnline')
+                                      .sort({ wins: -1 })
+                                      .limit(10);
+        res.json(leaderboard);
+    } catch (error) {
+        res.status(500).json({ message: "Error fetching leaderboard" });
+    }
+};
+
+// 2. Add Friend
+exports.addFriend = async (req, res) => {
+    const { userId, friendId } = req.body;
+    try {
+        if (!userId || !friendId) return res.status(400).json({ message: "Missing User IDs" });
+
+        // עדכון צד א' (אני): הוסף את החבר רק אם הוא לא קיים
+        const user = await User.findByIdAndUpdate(
+            userId,
+            { $addToSet: { friends: friendId } }, // $addToSet מונע כפילויות אוטומטית!
+            { new: true } // מחזיר את המשתמש המעודכן
+        ).populate('friends', 'username isOnline wins'); // מחזיר כבר את הפרטים המעודכנים ללובי
+
+        // עדכון צד ב' (החבר): הוסף אותי רק אם אני לא קיים
+        const friend = await User.findByIdAndUpdate(
+            friendId,
+            { $addToSet: { friends: userId } },
+            { new: true }
+        );
+
+        if (!user || !friend) return res.status(404).json({ message: "User not found" });
+
+        res.json({ message: "Friend added mutually!", friends: user.friends });
+    } catch (error) {
+        console.error("Add Friend Error:", error);
+        res.status(500).json({ message: "Error adding friend" });
+    }
+};
+
+// 3. Get Friends List
+exports.getUserFriends = async (req, res) => {
+    try {
+        const user = await User.findById(req.params.userId).populate('friends', 'username isOnline wins');
+        if (!user) return res.status(404).json({ message: "User not found" });
+        res.json(user.friends);
+    } catch (error) {
+        res.status(500).json({ message: "Error fetching friends" });
+    }
+};

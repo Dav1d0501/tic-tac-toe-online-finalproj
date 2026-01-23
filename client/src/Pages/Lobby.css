@@ -1,0 +1,224 @@
+
+.lobby-container {
+  width: 100%;
+  height: 100vh;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  background: radial-gradient(circle at center, #2b2b3d 0%, #1a1a1a 100%);
+  color: white;
+  overflow-y: auto;
+}
+
+/* כותרת */
+.lobby-container .lobby-header {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.lobby-container .lobby-header h1 {
+  margin: 0;
+  font-size: 2rem;
+  text-shadow: 0 0 10px rgba(76, 201, 240, 0.5);
+}
+
+/* --- Grid System --- */
+.lobby-container .lobby-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr; 
+  gap: 20px;
+  height: 100%;
+}
+
+.lobby-container .lobby-column {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* --- Cards Design --- */
+.lobby-container .lobby-card {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  padding: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+}
+
+.lobby-container .lobby-card h3 {
+  margin-top: 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding-bottom: 10px;
+  color: #4cc9f0;
+}
+
+/* --- Inputs & Forms (Specific to Lobby) --- */
+.lobby-container .input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.lobby-container .input-group input {
+  padding: 10px;
+  border-radius: 6px;
+  border: none;
+  background: rgba(0, 0, 0, 0.3);
+  color: white;
+}
+
+.lobby-container .size-options {
+  display: flex;
+  gap: 10px;
+}
+
+.lobby-container .size-options button {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid transparent;
+}
+
+.lobby-container .size-options button.active {
+  background: #4cc9f0;
+  color: #000;
+  font-weight: bold;
+}
+
+.lobby-container .action-btn {
+  background: linear-gradient(45deg, #f72585, #b5179e);
+  border: none;
+  font-weight: bold;
+  padding: 12px;
+  margin-top: 10px;
+  cursor: pointer;
+  color: white;
+  border-radius: 6px;
+}
+
+/* --- Room List Styling --- */
+.lobby-container .rooms-section {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.lobby-container .rooms-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.lobby-container .room-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.03);
+  padding: 10px;
+  border-radius: 8px;
+  transition: background 0.2s;
+}
+
+.lobby-container .room-item:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.lobby-container .room-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.lobby-container .room-name { font-weight: bold; }
+.lobby-container .room-meta { font-size: 0.8rem; color: #aaa; }
+
+.lobby-container .join-btn {
+  padding: 6px 15px;
+  background: #4cc9f0;
+  border: none;
+  color: black;
+  font-weight: bold;
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.lobby-container .join-btn:disabled {
+  background: #555;
+  color: #888;
+  cursor: not-allowed;
+}
+
+/* --- Leaderboard Styling --- */
+.lobby-container .leaderboard-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.lobby-container .leaderboard-item {
+  display: flex;
+  align-items: center;
+  background: rgba(0, 0, 0, 0.2);
+  padding: 8px;
+  border-radius: 6px;
+}
+
+/* Unique styling for top 3 ranks */
+.lobby-container .rank-1 { border: 1px solid #ffd700; background: rgba(255, 215, 0, 0.1); }
+.lobby-container .rank-2 { border: 1px solid #c0c0c0; }
+.lobby-container .rank-3 { border: 1px solid #cd7f32; }
+
+.lobby-container .rank {
+  width: 30px;
+  font-weight: bold;
+  color: #888;
+}
+
+.lobby-container .player-details {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.lobby-container .player-name { font-weight: bold; font-size: 0.95rem; }
+.lobby-container .player-wins { font-size: 0.8rem; color: #4cc9f0; }
+
+.lobby-container .online-dot { 
+    color: #00ff00; 
+    font-size: 1.2rem; 
+    margin-left: 5px; 
+    animation: pulse 2s infinite;
+}
+
+/* --- Friends List Styling --- */
+.lobby-container .friend-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+
+.lobby-container .friend-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.lobby-container .status-indicator { font-size: 1.2rem; }
+.lobby-container .status-indicator.online { color: #00ff00; }
+.lobby-container .status-indicator.offline { color: #555; }
+
+/* --- Responsive --- */
+@media (max-width: 900px) {
+  .lobby-container .lobby-grid {
+    grid-template-columns: 1fr; 
+  }
+}
+
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.5; }
+    100% { opacity: 1; }
+}
