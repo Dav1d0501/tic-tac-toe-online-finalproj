@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { checkWinner } from '../utils/gameLogic';
-import { getBestMove } from '../utils/computerAI'; 
+import { getBestMove } from '../utils/computerAI';
 import './Board.css';
 
 const Board = ({ size, gameMode, difficulty, starter, socket, room, isHost, myRole }) => { 
@@ -52,7 +52,7 @@ const Board = ({ size, gameMode, difficulty, starter, socket, room, isHost, myRo
     socket.on('opponent_data', handleOpponentData);
     socket.on('reset_game', handleResetGame);
 
-    // --- התיקון: בקשה יזומה של הנתונים ברגע שהלוח עולה ---
+    // --- בקשה יזומה של הנתונים ברגע שהלוח עולה ---
     if (room) {
         console.log("Requesting opponent data for room:", room);
         socket.emit("req_opponent_data", room);

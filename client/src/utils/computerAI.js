@@ -1,7 +1,7 @@
 import { checkWinner } from './gameLogic';
 
 export const getBestMove = (board, size, difficulty) => {
-  // Use Minimax only for 3x3 Hard mode (unbeatable)
+  // Use Minimax only for 3x3 Hard mode
   if (size === 3 && difficulty === 'hard') {
     return getMinimaxMove(board, size);
   } 

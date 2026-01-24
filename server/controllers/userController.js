@@ -96,7 +96,7 @@ exports.addFriend = async (req, res) => {
             { new: true } // מחזיר את המשתמש המעודכן
         ).populate('friends', 'username isOnline wins'); // מחזיר כבר את הפרטים המעודכנים ללובי
 
-        // עדכון צד ב' (החבר): הוסף אותי רק אם אני לא קיים
+        //  הוסף אותי רק אם אני לא קיים
         const friend = await User.findByIdAndUpdate(
             friendId,
             { $addToSet: { friends: userId } },

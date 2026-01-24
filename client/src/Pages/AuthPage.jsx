@@ -17,7 +17,7 @@ const AuthPage = () => {
   // Dynamic API URL: Uses environment variable in production, localhost in dev
   const API_URL = import.meta.env.VITE_SERVER_URL || "http://localhost:3001";
 
-  // --- 1. Standard Login/Register Handler ---
+  // --- 1.  Login/Register Handler ---
   const handleSubmit = async (e) => {
     e.preventDefault();
     setMessage('');
