@@ -122,3 +122,32 @@ exports.getUserFriends = async (req, res) => {
         res.status(500).json({ message: "Error fetching friends" });
     }
 };
+// מחיקת משתמש לצמיתות
+exports.deleteUser = async (req, res) => {
+    const { userId } = req.body;
+
+    try {
+        if (!userId) {
+            return res.status(400).json({ message: "User ID is required" });
+        }
+
+        // 1. הסרת המשתמש מרשימות החברים של כולם (ניקוי שאריות)
+        await User.updateMany(
+            { friends: userId },
+            { $pull: { friends: userId } }
+        );
+
+        // 2. מחיקת המשתמש עצמו
+        const deletedUser = await User.findByIdAndDelete(userId);
+
+        if (!deletedUser) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        res.json({ message: "User account deleted successfully" });
+
+    } catch (error) {
+        console.error("Delete User Error:", error);
+        res.status(500).json({ message: "Error deleting account" });
+    }
+};

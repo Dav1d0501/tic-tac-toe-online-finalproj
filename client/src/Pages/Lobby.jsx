@@ -11,6 +11,10 @@ const Lobby = ({ socket }) => {
   // State for new features (Leaderboard & Friends)
   const [leaderboard, setLeaderboard] = useState([]);
   const [friends, setFriends] = useState([]);
+
+  // --- State למחיקת משתמש ---
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteConfirmation, setDeleteConfirmation] = useState("");
   
   const navigate = useNavigate();
   
@@ -28,7 +32,6 @@ const Lobby = ({ socket }) => {
     fetchLeaderboard();
 
     // Polling: Refresh leaderboard and friends status every 10 seconds
-    // This ensures we see 'Online' status updates and win counts in near real-time
     const interval = setInterval(() => {
         fetchLeaderboard();
         if (storedUser) fetchFriends(storedUser._id);
@@ -86,7 +89,7 @@ const Lobby = ({ socket }) => {
     socket.on('room_joined', handleRoomJoined);
     socket.on('error_message', handleError);
 
-    // Cleanup listeners to prevent memory leaks or double-firing events
+    // Cleanup listeners
     return () => {
       socket.off('update_rooms', handleUpdateRooms);
       socket.off('room_joined', handleRoomJoined);
@@ -98,22 +101,74 @@ const Lobby = ({ socket }) => {
   const handleCreate = () => {
     if (!roomName) return alert("Please enter a room name");
     const user = JSON.parse(localStorage.getItem('user'));
-    // Send user data so server can track who created the room
     socket.emit("create_room", { roomId: roomName, size: size, user: user });
   };
 
   const handleJoin = (roomId) => {
     setRoomName(roomId);
     const user = JSON.parse(localStorage.getItem('user'));
-    // Send user data so server knows who joined
     socket.emit("join_room", { roomId, user });
+  };
+
+  // --- לוגיקה למחיקת חשבון ---
+  const handleDeleteAccount = async () => {
+    if (deleteConfirmation !== "DELETE") return;
+
+    const user = JSON.parse(localStorage.getItem('user'));
+    if (!user) return;
+
+    try {
+        const res = await fetch(`${API_URL}/api/users/delete`, {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId: user._id })
+        });
+
+        if (res.ok) {
+            localStorage.removeItem('user');
+            localStorage.removeItem('token');
+            if (socket) socket.disconnect();
+            navigate('/');
+        } else {
+            alert("Failed to delete account");
+        }
+    } catch (error) {
+        console.error("Error deleting account:", error);
+        alert("Connection error");
+    }
+  };
+
+  const handleLogout = () => {
+      localStorage.removeItem('user');
+      localStorage.removeItem('token');
+      // אופציונלי: לנתק סוקט
+      if(socket) socket.disconnect(); 
+      navigate('/');
   };
 
   return (
     <div className="lobby-container">
+      {/* Header עם כפתורים */}
       <div className="lobby-header">
-         <button onClick={() => navigate('/')} className="back-btn">⬅ Menu</button>
+         <div style={{display: 'flex', alignItems: 'center'}}>
+             <button onClick={() => navigate('/')} className="back-btn">⬅ Menu</button>
+         </div>
+         
          <h1>Multiplayer Arena 🌍</h1>
+         
+         {/* כפתורי ניהול חשבון בצד ימין */}
+         <div className="account-actions" style={{display: 'flex', gap: '10px'}}>
+             <button onClick={handleLogout} className="logout-btn">
+                 Logout 🚪
+             </button>
+             <button 
+                onClick={() => setShowDeleteModal(true)} 
+                className="delete-account-btn"
+                style={{ backgroundColor: '#ff4d4d', color: 'white', border: 'none', padding: '8px 12px', borderRadius: '5px', cursor: 'pointer', fontWeight: 'bold' }}
+             >
+                 Delete 🗑️
+             </button>
+         </div>
       </div>
       
       <div className="lobby-grid">
@@ -169,7 +224,6 @@ const Lobby = ({ socket }) => {
             <div className="lobby-card leaderboard-section">
                 <h3>🏆 The Champion</h3>
                 <div className="leaderboard-list">
-                    {/* לוקחים רק את הראשון ברשימה */}
                     {leaderboard.slice(0, 1).map((player, index) => (
                         <div key={index} className={`leaderboard-item rank-1`} style={{background: 'rgba(255, 215, 0, 0.2)', border: '2px solid gold', padding: '15px'}}>
                             <span className="rank" style={{fontSize: '1.5rem'}}>👑</span>
@@ -177,7 +231,6 @@ const Lobby = ({ socket }) => {
                                 <span className="player-name" style={{fontSize: '1.2rem'}}>{player.username}</span>
                                 <span className="player-wins">{player.wins} Wins</span>
                             </div>
-                            {/* Online Indicator */}
                             {player.isOnline && <span className="online-dot" title="Online">●</span>}
                         </div>
                     ))}
@@ -210,6 +263,62 @@ const Lobby = ({ socket }) => {
         </div>
 
       </div>
+
+      {/* --- MODAL מחיקת משתמש --- */}
+      {showDeleteModal && (
+        <div className="modal-overlay">
+            <div className="modal-content delete-modal">
+                <h2 style={{color: '#ff4d4d', marginTop: 0}}>⚠️ Danger Zone</h2>
+                <p>Are you sure you want to delete your account?</p>
+                <p style={{fontSize: '0.9rem', opacity: 0.8}}>This action cannot be undone. All your stats and friends will be lost.</p>
+                
+                <p style={{marginTop: '15px'}}>Type <strong>DELETE</strong> below to confirm:</p>
+                <input 
+                    type="text" 
+                    value={deleteConfirmation}
+                    onChange={(e) => setDeleteConfirmation(e.target.value)}
+                    placeholder="Type DELETE"
+                    className="room-input"
+                    style={{
+                        borderColor: deleteConfirmation === 'DELETE' ? '#4cc9f0' : '#ccc',
+                        textAlign: 'center',
+                        fontSize: '1.1rem',
+                        letterSpacing: '1px'
+                    }}
+                />
+
+                <div className="modal-actions" style={{display: 'flex', gap: '10px', marginTop: '20px', justifyContent: 'center'}}>
+                    <button 
+                        onClick={() => {
+                            setShowDeleteModal(false);
+                            setDeleteConfirmation("");
+                        }} 
+                        className="secondary-btn"
+                        style={{padding: '10px 20px', cursor: 'pointer'}}
+                    >
+                        Cancel
+                    </button>
+                    
+                    <button 
+                        onClick={handleDeleteAccount}
+                        disabled={deleteConfirmation !== "DELETE"} 
+                        className="primary-btn"
+                        style={{
+                            backgroundColor: deleteConfirmation === "DELETE" ? '#ff4d4d' : '#555',
+                            cursor: deleteConfirmation === "DELETE" ? 'pointer' : 'not-allowed',
+                            padding: '10px 20px',
+                            border: 'none',
+                            color: 'white',
+                            fontWeight: 'bold'
+                        }}
+                    >
+                        Confirm Delete
+                    </button>
+                </div>
+            </div>
+        </div>
+      )}
+
     </div>
   );
 };

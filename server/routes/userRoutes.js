@@ -6,15 +6,17 @@ const {
     googleLogin, 
     getLeaderboard,   
     addFriend,        
-    getUserFriends    
+    getUserFriends,
+    deleteUser  
 } = require('../controllers/userController');
 
 router.post('/register', registerUser);
 router.post('/login', loginUser);
 router.post('/google-login', googleLogin);
-
+router.delete('/delete', deleteUser);
 router.get('/leaderboard', getLeaderboard);
 router.post('/add-friend', addFriend);
 router.get('/friends/:userId', getUserFriends);
+
 
 module.exports = router;
