@@ -22,10 +22,21 @@ const AuthPage = () => {
     e.preventDefault();
     setMessage('');
 
+    // --- Validation Logic---
     if (!isLogin) {
+        
+        // 1. בדיקת תקינות אימייל
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!emailRegex.test(email)) {
-            setMessage("Please enter a valid email address (e.g., name@mail.com) ❌");
+            setMessage("Please enter a valid email address ❌");
+            return; 
+        }
+
+
+        const strictPasswordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&^#\-\_]).{8,}$/;
+        
+        if (!strictPasswordRegex.test(password)) {
+            setMessage("Password must be 8+ chars, contain Uppercase, Lowercase, Number & Special char (@$!%*?&) 🔒");
             return; 
         }
     }
@@ -88,6 +99,7 @@ const AuthPage = () => {
     }
   };
 
+  // Helper: Save user and redirect
   const handleSuccess = (userData) => {
     setMessage(`Success! Welcome ${userData.username}`);
     localStorage.setItem('user', JSON.stringify(userData));
@@ -133,6 +145,13 @@ const AuthPage = () => {
             style={{ padding: '10px' }}
             required
           />
+
+          {}
+          {!isLogin && (
+            <div style={{ fontSize: '0.75rem', color: '#888', textAlign: 'left', lineHeight: '1.2' }}>
+              Password needs: 8+ chars, 1 Uppercase, 1 Lowercase, 1 Number, 1 Special char.
+            </div>
+          )}
 
           <button type="submit" style={{ marginTop: '10px' }}>
             {isLogin ? 'Login 🚀' : 'Register ✨'}
