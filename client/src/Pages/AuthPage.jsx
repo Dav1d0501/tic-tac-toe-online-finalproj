@@ -22,6 +22,14 @@ const AuthPage = () => {
     e.preventDefault();
     setMessage('');
 
+    if (!isLogin) {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+            setMessage("Please enter a valid email address (e.g., name@mail.com) ❌");
+            return; 
+        }
+    }
+
     const endpoint = isLogin ? 'login' : 'register';
     
     const payload = isLogin 
@@ -80,7 +88,6 @@ const AuthPage = () => {
     }
   };
 
-  // Helper: Save user and redirect
   const handleSuccess = (userData) => {
     setMessage(`Success! Welcome ${userData.username}`);
     localStorage.setItem('user', JSON.stringify(userData));

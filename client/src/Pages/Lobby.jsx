@@ -8,13 +8,17 @@ const Lobby = ({ socket }) => {
   const [size, setSize] = useState(3);
   const [availableRooms, setAvailableRooms] = useState([]);
   
-  // State for new features (Leaderboard & Friends)
+  // State for features (Leaderboard & Friends)
   const [leaderboard, setLeaderboard] = useState([]);
   const [friends, setFriends] = useState([]);
 
   // --- State למחיקת משתמש ---
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteConfirmation, setDeleteConfirmation] = useState("");
+
+  // --- State לעדכון אימייל בלבד ---
+  const [showEmailModal, setShowEmailModal] = useState(false);
+  const [newEmail, setNewEmail] = useState("");
   
   const navigate = useNavigate();
   
@@ -31,13 +35,11 @@ const Lobby = ({ socket }) => {
     }
     fetchLeaderboard();
 
-    // Polling: Refresh leaderboard and friends status every 10 seconds
     const interval = setInterval(() => {
         fetchLeaderboard();
         if (storedUser) fetchFriends(storedUser._id);
     }, 10000);
 
-    // Cleanup interval on component unmount
     return () => clearInterval(interval);
   }, []);
 
@@ -65,14 +67,10 @@ const Lobby = ({ socket }) => {
   // --- Socket Event Listeners ---
   useEffect(() => {
     if (!socket) return;
-
-    // Request latest rooms immediately
     socket.emit('get_rooms'); 
 
     const handleUpdateRooms = (rooms) => setAvailableRooms(rooms);
-    
     const handleRoomJoined = (data) => {
-      // Pass game configuration to the GamePage via Router state
       navigate('/game/multiplayer', { 
         state: { 
           room: roomName, 
@@ -82,14 +80,12 @@ const Lobby = ({ socket }) => {
         } 
       });
     };
-
     const handleError = (msg) => alert(msg);
 
     socket.on('update_rooms', handleUpdateRooms);
     socket.on('room_joined', handleRoomJoined);
     socket.on('error_message', handleError);
 
-    // Cleanup listeners
     return () => {
       socket.off('update_rooms', handleUpdateRooms);
       socket.off('room_joined', handleRoomJoined);
@@ -110,10 +106,58 @@ const Lobby = ({ socket }) => {
     socket.emit("join_room", { roomId, user });
   };
 
+  // --- לוגיקה לעדכון אימייל בלבד ---
+  const openEmailModal = () => {
+      const user = JSON.parse(localStorage.getItem('user'));
+      if (user) {
+          setNewEmail(user.email || ""); 
+          setShowEmailModal(true);
+      }
+  };
+
+  const handleUpdateEmail = async () => {
+      // 1. בדיקת תקינות אימייל (Validation)
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(newEmail)) {
+          return alert("Please enter a valid email address! (e.g., user@example.com) ❌");
+      }
+
+      const user = JSON.parse(localStorage.getItem('user'));
+      if (!user) return;
+
+      if (newEmail === user.email) {
+          setShowEmailModal(false);
+          return;
+      }
+
+      try {
+          const res = await fetch(`${API_URL}/api/users/update-email`, {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ userId: user._id, newEmail: newEmail })
+          });
+          
+          const data = await res.json();
+          
+          if (!res.ok) {
+              return alert(data.message || "Failed to update email");
+          }
+
+          user.email = newEmail;
+          localStorage.setItem('user', JSON.stringify(user));
+          
+          alert("Email updated successfully! 📧");
+          setShowEmailModal(false);
+          
+      } catch (err) {
+          console.error(err);
+          alert("Connection error while updating email");
+      }
+  };
+
   // --- לוגיקה למחיקת חשבון ---
   const handleDeleteAccount = async () => {
     if (deleteConfirmation !== "DELETE") return;
-
     const user = JSON.parse(localStorage.getItem('user'));
     if (!user) return;
 
@@ -141,23 +185,30 @@ const Lobby = ({ socket }) => {
   const handleLogout = () => {
       localStorage.removeItem('user');
       localStorage.removeItem('token');
-      // אופציונלי: לנתק סוקט
       if(socket) socket.disconnect(); 
       navigate('/');
   };
 
   return (
     <div className="lobby-container">
-      {/* Header עם כפתורים */}
+      {/* Header */}
       <div className="lobby-header">
-         <div style={{display: 'flex', alignItems: 'center'}}>
+         <div style={{display: 'flex', alignItems: 'center', gap: '15px'}}>
              <button onClick={() => navigate('/')} className="back-btn">⬅ Menu</button>
+             <h1>Arena 🌍</h1>
          </div>
          
-         <h1>Multiplayer Arena 🌍</h1>
-         
-         {/* כפתורי ניהול חשבון בצד ימין */}
-         <div className="account-actions" style={{display: 'flex', gap: '10px'}}>
+         <div className="account-actions" style={{display: 'flex', gap: '10px', alignItems: 'center'}}>
+             {/* כפתור עדכון אימייל בלבד */}
+             <button 
+                onClick={openEmailModal} 
+                className="settings-btn"
+                style={{ fontSize: '1.5rem', background: 'none', border: 'none', cursor: 'pointer', marginRight: '5px' }}
+                title="Update Email"
+             >
+                ✉️
+             </button>
+
              <button onClick={handleLogout} className="logout-btn">
                  Logout 🚪
              </button>
@@ -172,8 +223,7 @@ const Lobby = ({ socket }) => {
       </div>
       
       <div className="lobby-grid">
-        
-        {/* Column 1: Main Control Panel (Create & Join) */}
+        {/* Main Panel */}
         <div className="lobby-column main-panel">
             <div className="lobby-card create-section">
                 <h3>🎮 Create Room</h3>
@@ -219,7 +269,7 @@ const Lobby = ({ socket }) => {
             </div>
         </div>
 
-        {/* Column 2: Leaderboard */}
+        {/* Leaderboard */}
         <div className="lobby-column side-panel">
             <div className="lobby-card leaderboard-section">
                 <h3>🏆 The Champion</h3>
@@ -228,19 +278,20 @@ const Lobby = ({ socket }) => {
                         <div key={index} className={`leaderboard-item rank-1`} style={{background: 'rgba(255, 215, 0, 0.2)', border: '2px solid gold', padding: '15px'}}>
                             <span className="rank" style={{fontSize: '1.5rem'}}>👑</span>
                             <div className="player-details">
-                                <span className="player-name" style={{fontSize: '1.2rem'}}>{player.username}</span>
+                                <span className="player-name" style={{fontSize: '1.2rem'}}>
+                                    {player.username}
+                                </span>
                                 <span className="player-wins">{player.wins} Wins</span>
                             </div>
                             {player.isOnline && <span className="online-dot" title="Online">●</span>}
                         </div>
                     ))}
-                    
                     {leaderboard.length === 0 && <p className="empty-msg">No champions yet...</p>}
                 </div>
             </div>
         </div>
 
-        {/* Column 3: Friends List */}
+        {/* Friends */}
         <div className="lobby-column side-panel">
             <div className="lobby-card friends-section">
                 <h3>👥 Friends</h3>
@@ -261,16 +312,41 @@ const Lobby = ({ socket }) => {
                 )}
             </div>
         </div>
-
       </div>
 
-      {/* --- MODAL מחיקת משתמש --- */}
+      {/* ---  עדכון אימייל בלבד --- */}
+      {showEmailModal && (
+        <div className="modal-overlay">
+            <div className="modal-content settings-modal">
+                <h2>Update Email ✉️</h2>
+                
+                <div className="input-group">
+                    <label>New Email Address:</label>
+                    <input 
+                        type="email" 
+                        value={newEmail}
+                        onChange={(e) => setNewEmail(e.target.value)}
+                        className="room-input"
+                        placeholder="Enter new email..."
+                        style={{width: '90%', padding: '10px'}}
+                    />
+                </div>
+
+                <div className="modal-actions" style={{marginTop: '20px', display: 'flex', justifyContent: 'center', gap: '10px'}}>
+                    <button onClick={() => setShowEmailModal(false)} className="secondary-btn">Cancel</button>
+                    <button onClick={handleUpdateEmail} className="primary-btn">Save Email</button>
+                </div>
+            </div>
+        </div>
+      )}
+
+      {/* ---  מחיקת משתמש --- */}
       {showDeleteModal && (
         <div className="modal-overlay">
             <div className="modal-content delete-modal">
                 <h2 style={{color: '#ff4d4d', marginTop: 0}}>⚠️ Danger Zone</h2>
                 <p>Are you sure you want to delete your account?</p>
-                <p style={{fontSize: '0.9rem', opacity: 0.8}}>This action cannot be undone. All your stats and friends will be lost.</p>
+                <p style={{fontSize: '0.9rem', opacity: 0.8}}>This action cannot be undone.</p>
                 
                 <p style={{marginTop: '15px'}}>Type <strong>DELETE</strong> below to confirm:</p>
                 <input 

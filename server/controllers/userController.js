@@ -151,3 +151,34 @@ exports.deleteUser = async (req, res) => {
         res.status(500).json({ message: "Error deleting account" });
     }
 };
+// עדכון אימייל  
+exports.updateEmail = async (req, res) => {
+    const { userId, newEmail } = req.body;
+
+    try {
+        if (!userId || !newEmail) {
+            return res.status(400).json({ message: "Missing user ID or email" });
+        }
+
+        const emailExists = await User.findOne({ email: newEmail });
+        
+        if (emailExists && emailExists._id.toString() !== userId) {
+            return res.status(409).json({ message: "Email is already taken by another user" });
+        }
+
+        const updatedUser = await User.findByIdAndUpdate(
+            userId,
+            { email: newEmail },
+            { new: true } 
+        );
+
+        res.json({ 
+            message: "Email updated successfully", 
+            user: updatedUser 
+        });
+
+    } catch (error) {
+        console.error("Update Email Error:", error);
+        res.status(500).json({ message: "Server error" });
+    }
+};
