@@ -37,7 +37,7 @@ A full-stack Node.js and React application for real-time competitive gaming. Thi
 
 ### Step 1: Clone the repository
 ```bash
-git clone https://github.com/Dav1d0501/tic-tac-toe-multiplayer.git
+git clone https://github.com/Dav1d0501/tic-tac-toe-online-finalproj.git
 cd tic-tac-toe-multiplayer
 ```
 
