@@ -1,6 +1,6 @@
 # Real-Time Multiplayer Tic Tac Toe
 ### submitted by:
-***דויד פרדקין***
+***דויד פרדקין, קיריל קולוטוב***
 
 A full-stack Node.js and React application for real-time competitive gaming. This project features a robust multiplayer system using Socket.io, secure user authentication with Google OAuth, a live leaderboard, and a reciprocal friends system.
 
@@ -99,8 +99,8 @@ POST http://localhost:3001/api/users/register
 Content-Type: application/json
 
 {
-  "username": "DavidPlayer",
-  "email": "david@example.com",
+  "username": "Player",
+  "email": "קexample@example.com",
   "password": "password123"
 }
 ```
@@ -111,7 +111,7 @@ POST http://localhost:3001/api/users/login
 Content-Type: application/json
 
 {
-  "username": "DavidPlayer",
+  "username": "Player",
   "password": "password123"
 }
 ```
@@ -191,8 +191,8 @@ tic-tac-toe-multiplayer/
 ```json
 {
   "_id": "64b1f7e8a9...",
-  "username": "David",
-  "email": "david@example.com",
+  "username": "example",
+  "email": "example@example.com",
   "password": "$2b$10$hashed_password...",
   "wins": 15,
   "losses": 3,
