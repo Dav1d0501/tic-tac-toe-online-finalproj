@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { checkWinner } from '../utils/gameLogic';
 import { getBestMove } from '../utils/computerAI';
 import './Board.css';
@@ -18,6 +18,11 @@ const Board = ({ size, gameMode, difficulty, starter, socket, room, isHost, myRo
   const [friendMessage, setFriendMessage] = useState(''); 
   const [isAlreadyFriend, setIsAlreadyFriend] = useState(false);
 
+  // --- Chat State ---
+  const [messages, setMessages] = useState([]);
+  const [currentMessage, setCurrentMessage] = useState("");
+  const chatEndRef = useRef(null); // בשביל גלילה אוטומטית למטה
+
   const computerSymbol = starter === 'computer' ? 'X' : 'O';
   const API_URL = import.meta.env.VITE_SERVER_URL || "http://localhost:3001";
 
@@ -32,22 +37,19 @@ const Board = ({ size, gameMode, difficulty, starter, socket, room, isHost, myRo
     setIsXNext(true);
     setWinner(null);
     setFriendMessage('');
+    // לא מאפסים פה את הצ'אט כדי שהיסטוריית השיחה תישאר גם אחרי שלוחצים New Game
   };
 
-  // --- בדיקת חברות אוטומטית כשהיריב מתחבר ---
+  // --- בדיקת חברות אוטומטית ---
   useEffect(() => {
       if (opponent && opponent._id) {
           const user = JSON.parse(localStorage.getItem('user'));
           if (user && user._id) {
-              // מושכים את רשימת החברים המעודכנת כדי לוודא אם הם כבר חברים
               fetch(`${API_URL}/api/users/friends/${user._id}`)
                   .then(res => res.json())
                   .then(friends => {
-                      // בודקים אם ה-ID של היריב נמצא ברשימת החברים שחזרה
                       const isFriend = friends.some(f => f._id === opponent._id);
                       setIsAlreadyFriend(isFriend);
-                      
-                      // מעדכנים על הדרך את הלוקאל סטורג' שיהיה מסונכרן
                       user.friends = friends.map(f => f._id);
                       localStorage.setItem('user', JSON.stringify(user));
                   })
@@ -56,41 +58,45 @@ const Board = ({ size, gameMode, difficulty, starter, socket, room, isHost, myRo
       }
   }, [opponent, API_URL]);
 
-  // 2. Socket Listeners (Split into two effects for stability)
+  // 2. Socket Listeners 
 
-  // 2.A. Stable Events (Opponent Data & Reset)
+  // 2.A. Stable Events (Opponent Data, Reset, & Chat)
   useEffect(() => {
     if (gameMode !== 'multiplayer' || !socket) return;
 
     const handleOpponentData = (data) => {
-        console.log("Opponent Data Received:", data);
         setOpponent(data);
     };
 
     const handleResetGame = () => {
-      console.log("Reset command received");
       resetGameLocal();
+    };
+
+    const handleReceiveMessage = (data) => {
+        setMessages((prevMessages) => [...prevMessages, data]);
     };
 
     socket.on('opponent_data', handleOpponentData);
     socket.on('reset_game', handleResetGame);
+    socket.on('receive_message', handleReceiveMessage);
 
-    // --- בקשה יזומה של הנתונים ברגע שהלוח עולה ---
     if (room) {
-        console.log("Requesting opponent data for room:", room);
         socket.emit("req_opponent_data", room);
     }
-    // ---------------------------------------------------
 
     return () => {
       socket.off('opponent_data', handleOpponentData);
       socket.off('reset_game', handleResetGame);
+      socket.off('receive_message', handleReceiveMessage);
     };
   }, [socket, gameMode, room]); 
 
+  // גלילה אוטומטית למטה כשמקבלים הודעה חדשה
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
 
   // 2.B. Dynamic Events (Game Moves)
-  // This effect depends on the board state to correctly update moves
   useEffect(() => {
     if (gameMode !== 'multiplayer' || !socket) return;
 
@@ -104,7 +110,7 @@ const Board = ({ size, gameMode, difficulty, starter, socket, room, isHost, myRo
     return () => {
       socket.off('receive_move', handleReceiveMove);
     };
-  }, [socket, gameMode, board, isXNext, winner]); // State dependencies required here
+  }, [socket, gameMode, board, isXNext, winner]); 
 
 
   // 3. AI Turn Logic
@@ -120,7 +126,7 @@ const Board = ({ size, gameMode, difficulty, starter, socket, room, isHost, myRo
     }
   }, [isXNext, winner, gameMode, board, size, difficulty, computerSymbol]); 
 
-  // 4. Game Over Reporting (Host Only)
+  // 4. Game Over Reporting
   useEffect(() => {
       if (winner && gameMode === 'multiplayer' && socket) {
           if (isHost) {
@@ -184,9 +190,8 @@ const Board = ({ size, gameMode, difficulty, starter, socket, room, isHost, myRo
         const data = await res.json();
         if (res.ok) {
             setFriendMessage("Friend Added! 🎉");
-            setIsAlreadyFriend(true); // מעלים את הכפתור 
+            setIsAlreadyFriend(true); 
             
-            // עדכון הלוקאל סטורג' כדי שלא נצטרך למשוך שוב סתם
             if (!user.friends) user.friends = [];
             user.friends.push(opponent._id);
             localStorage.setItem('user', JSON.stringify(user));
@@ -198,7 +203,22 @@ const Board = ({ size, gameMode, difficulty, starter, socket, room, isHost, myRo
     }
   };
 
-  // Helper for status message
+  // --- Send Chat Message ---
+  const handleSendMessage = (e) => {
+      e.preventDefault();
+      if (currentMessage.trim() !== "" && socket && room) {
+          const user = JSON.parse(localStorage.getItem('user'));
+          const senderName = user ? user.username : 'Guest';
+          
+          socket.emit("send_message", {
+              room: room,
+              message: currentMessage,
+              sender: senderName
+          });
+          setCurrentMessage(""); // מנקה את התיבה אחרי השליחה
+      }
+  };
+
   const getEndGameMessage = () => {
       if (winner === 'Draw') return "It's a Draw! 🤝";
       if (gameMode === 'multiplayer' && myOnlineSymbol) {
@@ -206,6 +226,10 @@ const Board = ({ size, gameMode, difficulty, starter, socket, room, isHost, myRo
       }
       return `Winner: ${winner} 🏆`;
   };
+
+  // נוציא את המשתמש הנוכחי כדי לדעת איזה צד של הצ'אט לצבוע
+  const currentUser = JSON.parse(localStorage.getItem('user'));
+  const myUsername = currentUser ? currentUser.username : 'Guest';
 
   return (
     <div className="board-container">
@@ -276,6 +300,40 @@ const Board = ({ size, gameMode, difficulty, starter, socket, room, isHost, myRo
             New Game
           </button>
       )}
+
+      {/* --- Chat Component (Only in Multiplayer) --- */}
+      {gameMode === 'multiplayer' && (
+          <div className="chat-container">
+              <div className="chat-messages">
+                  {messages.length === 0 ? (
+                      <p className="chat-empty">Start the conversation!</p>
+                  ) : (
+                      messages.map((msg, idx) => {
+                          const isMe = msg.sender === myUsername;
+                          return (
+                              <div key={idx} className={`chat-message ${isMe ? 'message-mine' : 'message-opponent'}`}>
+                                  <span className="msg-sender">{isMe ? 'You' : msg.sender}</span>
+                                  <div className="msg-bubble">{msg.message}</div>
+                              </div>
+                          )
+                      })
+                  )}
+                  <div ref={chatEndRef} />
+              </div>
+              
+              <form onSubmit={handleSendMessage} className="chat-input-area">
+                  <input 
+                      type="text" 
+                      value={currentMessage}
+                      onChange={(e) => setCurrentMessage(e.target.value)}
+                      placeholder="Type a message..."
+                      className="chat-input"
+                  />
+                  <button type="submit" className="chat-send-btn">Send</button>
+              </form>
+          </div>
+      )}
+
     </div>
   );
 };

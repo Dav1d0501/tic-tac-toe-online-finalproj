@@ -159,12 +159,20 @@ io.on('connection', (socket) => {
       broadcastRoomList();
   };
 
-  // --- 3. Game Logic ---
+  // --- 3. Game Logic & chat ---
 
   socket.on("send_move", (data) => {
     if (data.room) socket.to(data.room).emit("receive_move", data);
   });
-
+  socket.on("send_message", (data) => {
+      const { room, message, sender } = data;
+      if (room) {
+          io.to(room).emit("receive_message", { 
+              message: message, 
+              sender: sender 
+          });
+      }
+  });
   socket.on("game_over", async (data) => {
       const { room, winnerSymbol } = data;
       const currentRoom = rooms[room];
