@@ -77,7 +77,6 @@ const Board = ({ size, gameMode, difficulty, starter, socket, room, isHost, myRo
     };
     const handleOpponentLeft = () => {
         console.log("Opponent left the room");
-        setIsAlreadyFriend(false); // מאפס את סטטוס החברות ליתר ביטחון
         setWinner("Opponent Fled 🏃‍♂️💨"); // עוצר את המשחק ומודיע שהיריב ברח
     };
 
