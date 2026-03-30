@@ -77,6 +77,7 @@ const Board = ({ size, gameMode, difficulty, starter, socket, room, isHost, myRo
     };
     const handleOpponentLeft = () => {
         console.log("Opponent left the room");
+        setOpponent(null);
         // עוצר את המשחק ומודיע שהיריב ברח
         setWinner("Opponent Fled 🏃‍♂️💨"); 
     };
