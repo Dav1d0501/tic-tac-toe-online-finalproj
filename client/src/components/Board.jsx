@@ -14,8 +14,9 @@ const Board = ({ size, gameMode, difficulty, starter, socket, room, isHost, myRo
   const [myOnlineSymbol, setMyOnlineSymbol] = useState(myRole || null);
   const [opponent, setOpponent] = useState(null); 
   
-  // UI Messages
+  // UI Messages & Friendship
   const [friendMessage, setFriendMessage] = useState(''); 
+  const [isAlreadyFriend, setIsAlreadyFriend] = useState(false);
 
   const computerSymbol = starter === 'computer' ? 'X' : 'O';
   const API_URL = import.meta.env.VITE_SERVER_URL || "http://localhost:3001";
@@ -33,9 +34,31 @@ const Board = ({ size, gameMode, difficulty, starter, socket, room, isHost, myRo
     setFriendMessage('');
   };
 
+  // --- בדיקת חברות אוטומטית כשהיריב מתחבר ---
+  useEffect(() => {
+      if (opponent && opponent._id) {
+          const user = JSON.parse(localStorage.getItem('user'));
+          if (user && user._id) {
+              // מושכים את רשימת החברים המעודכנת כדי לוודא אם הם כבר חברים
+              fetch(`${API_URL}/api/users/friends/${user._id}`)
+                  .then(res => res.json())
+                  .then(friends => {
+                      // בודקים אם ה-ID של היריב נמצא ברשימת החברים שחזרה
+                      const isFriend = friends.some(f => f._id === opponent._id);
+                      setIsAlreadyFriend(isFriend);
+                      
+                      // מעדכנים על הדרך את הלוקאל סטורג' שיהיה מסונכרן
+                      user.friends = friends.map(f => f._id);
+                      localStorage.setItem('user', JSON.stringify(user));
+                  })
+                  .catch(err => console.error("Error fetching friends:", err));
+          }
+      }
+  }, [opponent, API_URL]);
+
   // 2. Socket Listeners (Split into two effects for stability)
 
-// 2.A. Stable Events (Opponent Data & Reset)
+  // 2.A. Stable Events (Opponent Data & Reset)
   useEffect(() => {
     if (gameMode !== 'multiplayer' || !socket) return;
 
@@ -161,6 +184,12 @@ const Board = ({ size, gameMode, difficulty, starter, socket, room, isHost, myRo
         const data = await res.json();
         if (res.ok) {
             setFriendMessage("Friend Added! 🎉");
+            setIsAlreadyFriend(true); // מעלים את הכפתור 
+            
+            // עדכון הלוקאל סטורג' כדי שלא נצטרך למשוך שוב סתם
+            if (!user.friends) user.friends = [];
+            user.friends.push(opponent._id);
+            localStorage.setItem('user', JSON.stringify(user));
         } else {
             setFriendMessage(data.message || "Error");
         }
@@ -201,10 +230,12 @@ const Board = ({ size, gameMode, difficulty, starter, socket, room, isHost, myRo
                   {getEndGameMessage()}
                 </h2>
                 
-                {/* Friend Request Button */}
+                {/* Friend Request Button / Status */}
                 {gameMode === 'multiplayer' && opponent && opponent._id && (
                     <div className="friend-action" style={{ marginTop: '10px' }}>
-                        {!friendMessage ? (
+                        {isAlreadyFriend ? (
+                            <span style={{ color: '#20c997', fontWeight: 'bold', fontSize: '1.1rem' }}>🤝 You are friends</span>
+                        ) : !friendMessage ? (
                             <button onClick={handleAddFriend} className="add-friend-btn">
                                 ➕ Add {opponent.username} to Friends
                             </button>
