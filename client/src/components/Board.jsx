@@ -75,10 +75,16 @@ const Board = ({ size, gameMode, difficulty, starter, socket, room, isHost, myRo
     const handleReceiveMessage = (data) => {
         setMessages((prevMessages) => [...prevMessages, data]);
     };
+    const handleOpponentLeft = () => {
+        console.log("Opponent left the room");
+        setIsAlreadyFriend(false); // מאפס את סטטוס החברות ליתר ביטחון
+        setWinner("Opponent Fled 🏃‍♂️💨"); // עוצר את המשחק ומודיע שהיריב ברח
+    };
 
     socket.on('opponent_data', handleOpponentData);
     socket.on('reset_game', handleResetGame);
     socket.on('receive_message', handleReceiveMessage);
+    socket.on('opponent_left', handleOpponentLeft);
 
     if (room) {
         socket.emit("req_opponent_data", room);
@@ -88,6 +94,7 @@ const Board = ({ size, gameMode, difficulty, starter, socket, room, isHost, myRo
       socket.off('opponent_data', handleOpponentData);
       socket.off('reset_game', handleResetGame);
       socket.off('receive_message', handleReceiveMessage);
+      socket.off('opponent_left', handleOpponentLeft);
     };
   }, [socket, gameMode, room]); 
 
@@ -221,6 +228,7 @@ const Board = ({ size, gameMode, difficulty, starter, socket, room, isHost, myRo
 
   const getEndGameMessage = () => {
       if (winner === 'Draw') return "It's a Draw! 🤝";
+      if (winner === "Opponent Fled 🏃‍♂️💨") return winner;
       if (gameMode === 'multiplayer' && myOnlineSymbol) {
           return winner === myOnlineSymbol ? "You Won! 🎉" : "You Lost 💀";
       }
