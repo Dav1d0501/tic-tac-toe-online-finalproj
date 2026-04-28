@@ -1,0 +1,32 @@
+/* GamePage.css */
+.game-page-wrapper {
+    min-height: 100vh;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background-color: #120e0e;
+    background-image: linear-gradient(135deg, #1f0b0b 0%, #0d0a0a 100%);
+    color: #ffffff;
+    /* Reduced padding to save vertical space */
+    padding: 10px; 
+    box-sizing: border-box;
+}
+
+.game-header-top { width: 100%; max-width: 500px; display: flex; justify-content: flex-start; margin-bottom: 5px; }
+.game-title { font-size: 2rem; font-weight: 800; color: #f5cda3; margin: 0 0 10px 0; text-align: center; }
+
+.game-controls-wrapper { display: flex; flex-direction: column; gap: 8px; align-items: center; margin-bottom: 10px; width: 100%; }
+.game-controls-group { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; padding: 8px 12px; background: rgba(0, 0, 0, 0.3); border-radius: 8px; border: 1px solid #3d2121; }
+.game-control-label { color: #c5b4b4; font-weight: bold; font-size: 0.95rem; display: flex; align-items: center; }
+.game-controls-group button { padding: 6px 14px; font-size: 0.9rem; cursor: pointer; background-color: #2a1b1b; color: #ebebeb; border: 1px solid #4a2828; border-radius: 6px; }
+.game-controls-group button.active { background-color: #800020 !important; color: white; border-color: #a31d1d; font-weight: bold; }
+.back-action-btn { background: transparent; border: 1px solid #800020; color: #d93838; padding: 6px 12px; font-size: 0.85rem; font-weight: bold; border-radius: 6px; cursor: pointer; }
+
+/* SQUISH MODE: When the screen is short, shrink headers and gaps */
+@media (max-height: 750px) {
+    .game-title { font-size: 1.4rem; margin-bottom: 5px; }
+    .game-controls-wrapper { gap: 4px; margin-bottom: 5px; }
+    .game-controls-group { padding: 4px 8px; gap: 5px; }
+    .game-controls-group button { padding: 4px 10px; font-size: 0.8rem; }
+}

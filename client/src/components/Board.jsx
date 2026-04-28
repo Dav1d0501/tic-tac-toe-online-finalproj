@@ -285,6 +285,7 @@ const Board = ({ size, gameMode, difficulty, starter, socket, room, isHost, myRo
         )}
       </div>
 
+      {}
       <div 
         className={`board size-${size}`} 
         style={{ 
@@ -303,7 +304,6 @@ const Board = ({ size, gameMode, difficulty, starter, socket, room, isHost, myRo
           </button>
         ))}
       </div>
-
       {(gameMode !== 'multiplayer' || isHost) && (
           <button className="reset-btn" onClick={handleResetClick}>
             New Game

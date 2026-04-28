@@ -95,9 +95,17 @@ const Lobby = ({ socket }) => {
 
   // --- Handlers ---
   const handleCreate = () => {
-    if (!roomName) return alert("Please enter a room name");
+    if (!roomName || roomName.trim() === "") {
+        return alert("Please enter a room name! 📝");
+    }
+    
     const user = JSON.parse(localStorage.getItem('user'));
-    socket.emit("create_room", { roomId: roomName, size: size, user: user });
+    if (!user) {
+        return alert("Please log in to create a room!");
+    }
+
+    console.log("Emitting create_room:", roomName, size);
+    socket.emit("create_room", { roomId: roomName.trim(), size: size, user: user });
   };
 
   const handleJoin = (roomId) => {
@@ -199,7 +207,6 @@ const Lobby = ({ socket }) => {
          </div>
          
          <div className="account-actions" style={{display: 'flex', gap: '10px', alignItems: 'center'}}>
-             {/* כפתור עדכון אימייל בלבד */}
              <button 
                 onClick={openEmailModal} 
                 className="settings-btn"
@@ -215,16 +222,26 @@ const Lobby = ({ socket }) => {
              <button 
                 onClick={() => setShowDeleteModal(true)} 
                 className="delete-account-btn"
-                style={{ backgroundColor: '#ff4d4d', color: 'white', border: 'none', padding: '8px 12px', borderRadius: '5px', cursor: 'pointer', fontWeight: 'bold' }}
              >
                  Delete 🗑️
              </button>
          </div>
       </div>
+
+      {/* Champion Banner (Compact) */}
+      {leaderboard.length > 0 && (
+          <div className="champion-banner">
+              <span className="champion-icon">👑</span>
+              <span className="champion-title">Current Champion:</span>
+              <span className="champion-name">{leaderboard[0].username}</span>
+              <span className="champion-wins">({leaderboard[0].wins} Wins)</span>
+          </div>
+      )}
       
       <div className="lobby-grid">
-        {/* Main Panel */}
-        <div className="lobby-column main-panel">
+        {/* Left Column: Create & Rooms */}
+        <div className="lobby-column">
+            {/* Create Room */}
             <div className="lobby-card create-section">
                 <h3>🎮 Create Room</h3>
                 <div className="input-group">
@@ -243,7 +260,8 @@ const Lobby = ({ socket }) => {
                 </div>
             </div>
 
-            <div className="lobby-card rooms-section">
+            {/* Available Rooms (Scrollable) */}
+            <div className="lobby-card scrollable-card">
                 <h3>🚀 Available Rooms</h3>
                 {availableRooms.length === 0 ? (
                     <p className="empty-msg">No active rooms. Be the first!</p>
@@ -269,31 +287,9 @@ const Lobby = ({ socket }) => {
             </div>
         </div>
 
-        {/* Leaderboard */}
-        <div className="lobby-column side-panel">
-            <div className="lobby-card leaderboard-section">
-                <h3>🏆 The Champion</h3>
-                <div className="leaderboard-list">
-                    {leaderboard.slice(0, 1).map((player, index) => (
-                        <div key={index} className={`leaderboard-item rank-1`} style={{background: 'rgba(255, 215, 0, 0.2)', border: '2px solid gold', padding: '15px'}}>
-                            <span className="rank" style={{fontSize: '1.5rem'}}>👑</span>
-                            <div className="player-details">
-                                <span className="player-name" style={{fontSize: '1.2rem'}}>
-                                    {player.username}
-                                </span>
-                                <span className="player-wins">{player.wins} Wins</span>
-                            </div>
-                            {player.isOnline && <span className="online-dot" title="Online">●</span>}
-                        </div>
-                    ))}
-                    {leaderboard.length === 0 && <p className="empty-msg">No champions yet...</p>}
-                </div>
-            </div>
-        </div>
-
-        {/* Friends */}
-        <div className="lobby-column side-panel">
-            <div className="lobby-card friends-section">
+        {/* Right Column: Friends (Scrollable) */}
+        <div className="lobby-column">
+            <div className="lobby-card scrollable-card">
                 <h3>👥 Friends</h3>
                 {friends.length === 0 ? (
                     <p className="empty-msg">You have no friends yet. Play a game to add some!</p>
@@ -314,67 +310,46 @@ const Lobby = ({ socket }) => {
         </div>
       </div>
 
-      {/* ---  עדכון אימייל בלבד --- */}
+      {/* --- Modals --- */}
       {showEmailModal && (
         <div className="modal-overlay">
             <div className="modal-content settings-modal">
                 <h2>Update Email ✉️</h2>
-                
                 <div className="input-group">
-                    <label>New Email Address:</label>
                     <input 
                         type="email" 
                         value={newEmail}
                         onChange={(e) => setNewEmail(e.target.value)}
-                        className="room-input"
                         placeholder="Enter new email..."
-                        style={{width: '90%', padding: '10px'}}
+                        style={{width: '90%', padding: '10px', margin: '0 auto'}}
                     />
                 </div>
-
                 <div className="modal-actions" style={{marginTop: '20px', display: 'flex', justifyContent: 'center', gap: '10px'}}>
                     <button onClick={() => setShowEmailModal(false)} className="secondary-btn">Cancel</button>
-                    <button onClick={handleUpdateEmail} className="primary-btn">Save Email</button>
+                    <button onClick={handleUpdateEmail} className="primary-btn">Save</button>
                 </div>
             </div>
         </div>
       )}
 
-      {/* ---  מחיקת משתמש --- */}
       {showDeleteModal && (
         <div className="modal-overlay">
             <div className="modal-content delete-modal">
                 <h2 style={{color: '#ff4d4d', marginTop: 0}}>⚠️ Danger Zone</h2>
                 <p>Are you sure you want to delete your account?</p>
-                <p style={{fontSize: '0.9rem', opacity: 0.8}}>This action cannot be undone.</p>
-                
-                <p style={{marginTop: '15px'}}>Type <strong>DELETE</strong> below to confirm:</p>
                 <input 
                     type="text" 
                     value={deleteConfirmation}
                     onChange={(e) => setDeleteConfirmation(e.target.value)}
                     placeholder="Type DELETE"
-                    className="room-input"
                     style={{
                         borderColor: deleteConfirmation === 'DELETE' ? '#4cc9f0' : '#ccc',
                         textAlign: 'center',
-                        fontSize: '1.1rem',
-                        letterSpacing: '1px'
+                        fontSize: '1.1rem'
                     }}
                 />
-
                 <div className="modal-actions" style={{display: 'flex', gap: '10px', marginTop: '20px', justifyContent: 'center'}}>
-                    <button 
-                        onClick={() => {
-                            setShowDeleteModal(false);
-                            setDeleteConfirmation("");
-                        }} 
-                        className="secondary-btn"
-                        style={{padding: '10px 20px', cursor: 'pointer'}}
-                    >
-                        Cancel
-                    </button>
-                    
+                    <button onClick={() => {setShowDeleteModal(false); setDeleteConfirmation("");}} className="secondary-btn">Cancel</button>
                     <button 
                         onClick={handleDeleteAccount}
                         disabled={deleteConfirmation !== "DELETE"} 
@@ -382,14 +357,8 @@ const Lobby = ({ socket }) => {
                         style={{
                             backgroundColor: deleteConfirmation === "DELETE" ? '#ff4d4d' : '#555',
                             cursor: deleteConfirmation === "DELETE" ? 'pointer' : 'not-allowed',
-                            padding: '10px 20px',
-                            border: 'none',
-                            color: 'white',
-                            fontWeight: 'bold'
                         }}
-                    >
-                        Confirm Delete
-                    </button>
+                    >Confirm</button>
                 </div>
             </div>
         </div>

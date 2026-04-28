@@ -1,0 +1,152 @@
+/* ========================================= */
+/* Base Container - Matte, Brighter & Scroll */
+/* ========================================= */
+.home-container {
+    display: flex;
+    flex-direction: column;
+    height: 100vh; /* מחייב את הקונטיינר לתפוס 100% כדי שיגלול בעצמו */
+    width: 100vw;
+    background-color: #1c1515; /* גוון חום-שחור בהיר יותר */
+    background-image: linear-gradient(135deg, #361717 0%, #1a1212 100%); /* בורדו-חום עדין ובהיר יותר */
+    color: #ffffff;
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    overflow-y: auto; /* עוקף את הנעילה הגלובלית ומאפשר גלילה */
+    overflow-x: hidden;
+}
+
+/* ========================================= */
+/* Top Bar                                   */
+/* ========================================= */
+.top-bar {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 40px;
+    border-bottom: 1px solid #3d2121; /* קו הפרדה קצת יותר בהיר */
+    background: transparent;
+    flex-shrink: 0; /* מונע מהשורת תפריט להתכווץ בגלילה */
+}
+
+.user-greeting {
+    font-size: 1.1rem;
+    color: #d1c2c2; /* אפור-חם בהיר */
+}
+
+.user-highlight {
+    color: #f5cda3; /* זהב-שמנת בהיר */
+    font-weight: bold;
+}
+
+.home-logout-btn {
+    background: transparent;
+    border: 1px solid #a31d1d; /* אדום-בורדו בהיר יותר */
+    color: #d93838;
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: all 0.2s ease;
+}
+
+.home-logout-btn:hover {
+    background: #a31d1d;
+    color: white;
+}
+
+/* ========================================= */
+/* Main Content Layout (Centered)            */
+/* ========================================= */
+.home-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center; /* ממרכז את הכל אופקית */
+    justify-content: flex-start; /* מתחיל מלמעלה */
+    flex-grow: 1;
+    width: 100%;
+    padding: 12vh 20px 40px 20px; /* דוחף את הכותרת 12% מלמעלה למרכז-עליון */
+    box-sizing: border-box;
+}
+
+.home-title {
+    font-size: 3.5rem;
+    font-weight: 800;
+    color: #f5cda3; /* זהב-שמנת בולט ובהיר */
+    margin-bottom: 60px;
+    letter-spacing: 2px;
+    text-align: center;
+    text-shadow: none;
+}
+
+/* ========================================= */
+/* Animated Vertical Menu                    */
+/* ========================================= */
+.menu-vertical-container {
+    display: flex;
+    flex-direction: column;
+    gap: 25px;
+    width: fit-content;
+    margin: 0 auto; /* הבטחה נוספת למרכוז */
+}
+
+.menu-item-group {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    cursor: pointer;
+    color: #ebebeb; /* טקסט בהיר יותר לתפריט */
+}
+
+.menu-arrow-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transform: translateX(-100%);
+    opacity: 0;
+    color: inherit;
+    transition: transform 0.3s ease-out, opacity 0.3s ease-out, color 0.3s ease-out;
+}
+
+.menu-text {
+    font-size: 2rem; 
+    font-weight: 600;
+    transform: translateX(-40px);
+    transition: transform 0.3s ease-out, color 0.3s ease-out;
+    margin: 0;
+}
+
+/* Hover Effects */
+.menu-item-group:hover .menu-arrow-container {
+    transform: translateX(0);
+    opacity: 1;
+    color: #d93838; /* בורדו-אדום חי ובהיר יותר במעבר עכבר */
+}
+
+.menu-item-group:hover .menu-text {
+    transform: translateX(0) skewX(-2deg);
+    color: #d93838;
+}
+
+/* ========================================= */
+/* Responsive Design                         */
+/* ========================================= */
+
+@media (max-width: 768px) {
+    .top-bar {
+        padding: 15px 20px;
+    }
+
+    .home-content {
+        padding-top: 8vh;
+    }
+
+    .home-title {
+        font-size: 2.5rem;
+    }
+
+    .menu-text {
+        font-size: 1.6rem;
+    }
+}

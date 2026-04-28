@@ -1,12 +1,50 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import '../App.css'; 
+import './HomePage.css'; 
 
+// רכיב אייקון חץ (מחליף את lucide-react כדי לחסוך התקנות)
+const ArrowRightIcon = () => (
+  <svg 
+    width="40" 
+    height="40" 
+    viewBox="0 0 24 24" 
+    fill="none" 
+    stroke="currentColor" 
+    strokeWidth="3" 
+    strokeLinecap="round" 
+    strokeLinejoin="round"
+  >
+    <path d="M5 12h14M12 5l7 7-7 7" />
+  </svg>
+);
+
+// רכיב התפריט האנכי (משתמש ב-CSS Transitions במקום Framer Motion)
+const MenuVertical = ({ menuItems = [] }) => {
+  return (
+    <div className="menu-vertical-container">
+      {menuItems.map((item, index) => (
+        <div 
+            key={index} 
+            className="menu-item-group"
+            onClick={item.action}
+        >
+          <div className="menu-arrow-container">
+            <ArrowRightIcon />
+          </div>
+          <div className="menu-text">
+            {item.label}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+};
+
+// רכיב עמוד הבית המרכזי
 const HomePage = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
 
-  // Retrieve user data on mount
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
     if (storedUser) {
@@ -16,40 +54,38 @@ const HomePage = () => {
 
   const handleLogout = () => {
     localStorage.removeItem('user');
-    // Refresh to clear state and trigger the ProtectedRoute redirect
     window.location.reload(); 
   };
 
+  // כאן אנחנו מגדירים את אפשרויות התפריט ולאן כל אחת מנווטת
+  const mainMenuItems = [
+    { label: "Play Local", action: () => navigate('/game/local') },
+    { label: "Play vs Computer", action: () => navigate('/game/computer') },
+    { label: "Play Online", action: () => navigate('/lobby') }
+  ];
+
   return (
-    <div className="app-container">
+    <div className="home-container">
       
-      {/* Top User Bar */}
-      <div className="user-bar">
-        <div className="user-info">
-          Welcome, <span className="highlight">{user ? user.username : 'Guest'}</span>! 👋
+      {/* שורת משתמש עליונה */}
+      <div className="top-bar">
+        <div className="user-greeting">
+          Welcome, <span className="user-highlight">{user ? user.username : 'Guest'}</span>
         </div>
         
-        <button onClick={handleLogout} className="logout-btn">
-          Logout 🚪
+        <button onClick={handleLogout} className="home-logout-btn">
+          Logout
         </button>
       </div>
 
-      <h1 className="title">Tic Tac Toe Online</h1>
-      
-      <div className="menu">
-        <button onClick={() => navigate('/game/local')} className="menu-btn">
-          👥 Play Local (1 PC)
-        </button>
+      {/* תוכן מרכזי */}
+      <div className="home-content">
+        <h1 className="home-title">ArenaX</h1>
         
-        <button onClick={() => navigate('/game/computer')} className="menu-btn">
-          🤖 Play vs Computer
-        </button>
-        
-        {/* Navigate to Lobby for Online play */}
-        <button onClick={() => navigate('/lobby')} className="menu-btn">
-          🌍 Play Online
-        </button>
+        {/* קריאה לתפריט המונפש שהכנו למעלה */}
+        <MenuVertical menuItems={mainMenuItems} />
       </div>
+
     </div>
   );
 };

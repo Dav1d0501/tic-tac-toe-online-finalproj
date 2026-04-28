@@ -3,12 +3,13 @@
   box-sizing: border-box;
 }
 
+/* App.css */
 html, body, #root {
   height: 100%;
   width: 100%;
   margin: 0;
   padding: 0;
-  overflow: hidden; /* Prevent scrolling for game experience */
+  overflow-y: auto; /* Changed from hidden so content isn't permanently trapped */
   background: radial-gradient(circle at center, #3a3a52 0%, #1a1a1a 100%);
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
