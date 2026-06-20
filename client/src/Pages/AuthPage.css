@@ -2,7 +2,7 @@
     display: flex;
     height: 100vh; 
     width: 100vw;
-    background-color: #0f0d0d; /* שחור כמעט מוחלט */
+    background-color: #0f0d0d; 
     color: #e0e0e0;
     margin: 0;
     padding: 0;
@@ -11,10 +11,9 @@
     overflow-x: hidden;
 }
 
-/* צד שמאל - דמויות ורקע חם */
 .auth-left {
     flex: 1;
-    background: linear-gradient(135deg, #4a0404 0%, #1a0a0a 100%); /* בורדו עמוק לשחור-חום */
+    background: linear-gradient(135deg, #4a0404 0%, #1a0a0a 100%); 
     position: relative;
     display: none; 
     flex-direction: column;
@@ -33,7 +32,7 @@
     align-items: center;
     font-size: 1.5rem;
     font-weight: bold;
-    color: #e2b07e; /* צבע זהב-חול עדין */
+    color: #e2b07e; 
     z-index: 20;
 }
 
@@ -46,14 +45,13 @@
     z-index: 20;
 }
 
-/* צד ימין - טופס */
 .auth-right {
     flex: 1;
     display: flex;
     align-items: center;
     justify-content: center;
     padding: 2rem;
-    background-color: #161414; /* חום-שחור כהה מאוד */
+    background-color: #161414; 
     box-sizing: border-box;
 }
 
@@ -72,7 +70,7 @@
 }
 
 .auth-subtitle {
-    color: #a08a8a; /* חום-אפור עדין */
+    color: #a08a8a; 
     text-align: center;
     margin-bottom: 25px;
 }
@@ -94,7 +92,7 @@
     width: 100%;
     padding: 10px 15px;
     border-radius: 8px;
-    border: 1px solid rgba(128, 0, 32, 0.2); /* גבול בורדו שקוף */
+    border: 1px solid rgba(128, 0, 32, 0.2); 
     background: rgba(0, 0, 0, 0.4);
     color: white;
     font-size: 1rem;
@@ -104,7 +102,7 @@
 }
 
 .auth-input:focus {
-    border-color: #800020; /* בורדו בהיר יותר בפוקוס */
+    border-color: #800020; 
     background: rgba(0, 0, 0, 0.6);
     box-shadow: 0 0 10px rgba(128, 0, 32, 0.2);
 }
@@ -127,13 +125,12 @@
     color: #c5b4b4;
 }
 
-/* כפתור בורדו חם */
 .auth-submit-btn {
     width: 100%;
     padding: 12px;
     border-radius: 8px;
     border: none;
-    background: linear-gradient(45deg, #800020, #4a0404); /* בורדו עמוק */
+    background: linear-gradient(45deg, #800020, #4a0404); 
     color: #ffffff;
     font-size: 1.1rem;
     font-weight: bold;
@@ -173,7 +170,7 @@
 }
 
 .auth-toggle span {
-    color: #b32d2d; /* אדום-בורדו ללינקים */
+    color: #b32d2d; 
     font-weight: bold;
     cursor: pointer;
     text-decoration: underline;
@@ -191,7 +188,6 @@
 .auth-message.error { background: rgba(255, 77, 77, 0.05); color: #ff4d4d; border: 1px solid rgba(255, 77, 77, 0.2); }
 .auth-message.success { background: rgba(128, 0, 32, 0.1); color: #e2b07e; border: 1px solid rgba(128, 0, 32, 0.3); }
 
-/* התאמות גובה */
 @media (max-height: 750px) {
     .character-container {
         height: 300px;
