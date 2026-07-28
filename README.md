@@ -1,217 +1,158 @@
-# Real-Time Multiplayer Tic Tac Toe
-### submitted by:
-***דויד פרדקין, קיריל קולוטוב***
+# Real-Time Multiplayer Tic Tac Toe (ArenaX)
 
-A full-stack Node.js and React application for real-time competitive gaming. This project features a robust multiplayer system using Socket.io, secure user authentication with Google OAuth, a live leaderboard, and a reciprocal friends system.
+Submitted by: **דויד פרדקין, קיריל קולוטוב**
+
+A full-stack React and Node.js game. Real-time multiplayer over Socket.io, user accounts with
+password or Google sign-in, a live leaderboard, and a mutual friends system. Board sizes 3x3,
+5x5 and 10x10 are supported by the same generic win-detection logic.
+
+**Live:**
+Client (Vercel): https://tic-tac-toe-online-finalproj.vercel.app
+Server (Render): https://tic-tac-toe-online-finalproj.onrender.com
 
 ## Features
 
-- **Real-Time Multiplayer**: Instant bidirectional communication using Socket.io
-- **Smart Synchronization**: Custom handshake protocol to ensure data sync during race conditions
-- **User Authentication**: Secure signup/login with JWT and Google OAuth
-- **User Management**: Profile tracking with Wins, Losses, and Online status
-- **Social System**: Reciprocal friend adding with duplicate prevention (MongoDB atomic operators)
-- **Leaderboard**: Live tracking of top players ("The Champion")
-- **Game Modes**: Online Multiplayer, Vs Computer (AI), and Local PvP
-- **Responsive UI**: Modern Glassmorphism design built with React and Vite
+- **Three game modes**: online multiplayer, vs computer (AI), and local two-player on one screen
+- **Real-time play**: bidirectional communication over Socket.io rooms, plus in-game text chat
+- **Handshake protocol**: the client re-requests opponent data on mount (`req_opponent_data`), so
+  player details are never lost to event timing
+- **Server-side authority**: X/O roles, host privileges, and game-over reporting are decided by the server
+- **AI opponent**: Minimax with depth-weighted scoring on 3x3 hard, heuristic search on larger boards
+- **Accounts**: bcrypt-hashed passwords or Google OAuth sign-in
+- **Social**: mutual friend adding, online status, and a top-10 leaderboard
+- **Account management**: email update and permanent account deletion
+
+## Tech Stack
+
+**Client**: React 19, Vite, React Router 7, socket.io-client, @react-oauth/google, jwt-decode
+**Server**: Node.js, Express 5, Socket.io 4, Mongoose, bcryptjs, cors, dotenv
+**Database**: MongoDB
 
 ## API Endpoints
 
-### Authentication
-- `POST /api/users/register` - Create new user account
-- `POST /api/users/login` - User login with password
-- `POST /api/users/google-login` - Authentication via Google OAuth
+| Method | Route | Description |
+|---|---|---|
+| POST | `/api/users/register` | Create a new account |
+| POST | `/api/users/login` | Login with username and password |
+| POST | `/api/users/google-login` | Login or auto-register via Google |
+| GET | `/api/users/leaderboard` | Top 10 players by wins |
+| POST | `/api/users/add-friend` | Add a friend (updates both users) |
+| GET | `/api/users/friends/:userId` | Friend list with online status |
+| PATCH | `/api/users/update-email` | Update email address |
+| DELETE | `/api/users/delete` | Delete account and clean up references |
 
-### Users & Social
-- `GET /api/users/leaderboard` - Get top 10 players sorted by wins
-- `POST /api/users/add-friend` - Add a user to friends list (Mutual update)
-- `GET /api/users/friends/:userId` - Get specific user's friend list with online status
+## Socket Events
 
-## Installation & Setup
+| Event | Direction | Purpose |
+|---|---|---|
+| `user_connected` | client to server | Mark user online in the database |
+| `create_room` / `join_room` | client to server | Room lifecycle |
+| `room_joined` / `game_start` | server to client | Assigned role, board size, host flag |
+| `req_opponent_data` / `opponent_data` | both | Opponent sync handshake |
+| `send_move` / `receive_move` | both | Move relay (excludes the sender) |
+| `send_message` / `receive_message` | both | Chat relay (includes the sender) |
+| `game_over` | client to server | Host-only stats reporting |
+| `reset_game` | both | New game, host only |
+| `leave_room` / `opponent_left` / `you_are_host` | both | Disconnect handling and host migration |
+
+## Setup
 
 ### Prerequisites
-- Node.js (v14 or higher)
-- npm
-- MongoDB (Local or Atlas)
-- Google Cloud Credentials (Optional for Google Login)
 
-### Step 1: Clone the repository
+Node.js v14 or higher, npm, and a MongoDB instance (local or Atlas).
+A Google Cloud OAuth client ID is optional and only needed for Google sign-in.
+
+### Install
+
 ```bash
 git clone https://github.com/Dav1d0501/tic-tac-toe-online-finalproj.git
-cd tic-tac-toe-multiplayer
+cd tic-tac-toe-online-finalproj
+
+cd server && npm install
+cd ../client && npm install
 ```
 
-### Step 2: Backend Setup
-Navigate to the server folder and install dependencies:
-```bash
-cd server
-npm install
-```
+### Environment
 
-### Step 3: Frontend Setup
-Navigate to the client folder and install dependencies:
-```bash
-cd ../client
-npm install
-```
+`server/.env`:
 
-### Step 4: Environment Setup
-
-**Server Configuration**
-Create a `.env` file in the `server` directory:
 ```env
 PORT=3001
 MONGO_URI=your_mongodb_connection_string
 CLIENT_URL=http://localhost:5173
-# Optional
 GOOGLE_CLIENT_ID=your_google_client_id
 ```
 
-**Client Configuration**
-Create a `.env` file in the `client` directory:
+`client/.env`:
+
 ```env
 VITE_SERVER_URL=http://localhost:3001
-# Optional
 VITE_GOOGLE_CLIENT_ID=your_google_client_id
 ```
 
-### Step 5: Run the application
+Note: `VITE_` variables are inlined at build time, so changing them requires a rebuild.
 
-**Start the Server:**
+### Run
+
 ```bash
-cd server
-npm run dev
+cd server && npm run dev    # http://localhost:3001
+cd client && npm run dev    # http://localhost:5173
 ```
 
-**Start the Client:**
-```bash
-cd client
-npm run dev
-```
-
-The client will start on `http://localhost:5173` and the server on `http://localhost:3001`
-
-## Usage Examples
-
-### 1. Register a new user
-```bash
-POST http://localhost:3001/api/users/register
-Content-Type: application/json
-
-{
-  "username": "Player",
-  "email": "קexample@example.com",
-  "password": "password123"
-}
-```
-
-### 2. Login
-```bash
-POST http://localhost:3001/api/users/login
-Content-Type: application/json
-
-{
-  "username": "Player",
-  "password": "password123"
-}
-```
-
-### 3. Add a Friend
-```bash
-POST http://localhost:3001/api/users/add-friend
-Content-Type: application/json
-
-{
-  "userId": "64b1f7e8a97b...",
-  "friendId": "64b2a98c123d..."
-}
-```
-*Note: This endpoint updates both users' friend lists automatically.*
-
-### 4. Get Leaderboard
-```bash
-GET http://localhost:3001/api/users/leaderboard
-```
+To test online play locally, open a second browser window in private mode, since the session is
+stored in `localStorage`.
 
 ## Project Structure
 
 ```
-tic-tac-toe-multiplayer/
-├── client/                     # Frontend Application
+tic-tac-toe-online-finalproj/
+├── client/
 │   ├── src/
-│   │   ├── components/         # Reusable UI (Board, Cell, Loader)
-│   │   ├── pages/              # Game Pages (Login, Lobby, GamePage)
-│   │   ├── context/            # Global State (AuthContext)
-│   │   ├── utils/              # Game Logic & AI Algorithms
-│   │   ├── App.jsx             # Main Router
-│   │   └── main.jsx            # Entry Point
-│   ├── .env                    # Client Environment Variables
+│   │   ├── components/Board.jsx     # Game board, moves, chat, add friend
+│   │   ├── Pages/                   # AuthPage, HomePage, Lobby, GamePage
+│   │   ├── utils/gameLogic.js       # Generic NxN win detection
+│   │   ├── utils/computerAI.js      # Minimax and heuristic AI
+│   │   ├── App.jsx                  # Router, socket instance, route guard
+│   │   └── main.jsx                 # Entry point, Google OAuth provider
 │   └── package.json
 │
-├── server/                     # Backend Application
-│   ├── config/
-│   │   └── db.js               # MongoDB Connection
-│   ├── controllers/
-│   │   └── userController.js   # Auth & Logic Handlers
-│   ├── models/
-│   │   └── User.js             # Mongoose Schema
-│   ├── routes/
-│   │   └── userRoutes.js       # API Routes
-│   ├── index.js                # Server Entry & Socket.io Logic
-│   ├── .env                    # Server Environment Variables
+├── server/
+│   ├── config/db.js                 # MongoDB connection
+│   ├── controllers/userController.js
+│   ├── models/User.js               # Mongoose schema
+│   ├── routes/userRoutes.js
+│   ├── index.js                     # Express app and all Socket.io logic
 │   └── package.json
 │
 └── README.md
 ```
 
-## Technologies Used
+## User Data Model
 
-- **Node.js** - Runtime environment
-- **Express.js** - Web framework
-- **Socket.io** - Real-time bidirectional communication
-- **MongoDB** - NoSQL Database
-- **Mongoose** - ODM for MongoDB
-- **React.js** - Frontend library (Vite)
-- **Passport.js** - Authentication middleware
-- **Bcrypt** - Password hashing
-
-## User Flow
-
-1. **Sign Up/Login** → Authenticate via Email or Google.
-2. **Lobby** → View Leaderboard, Online Status, and Friends.
-3. **Room Creation** → Host creates a unique room ID.
-4. **Handshake** → Opponent joins; Client requests data sync (`req_opponent_data`).
-5. **Gameplay** → Real-time moves broadcasted via Socket.io.
-6. **Game Over** → Winner declared, stats updated in DB.
-7. **Social** → Option to add opponent as a friend appears.
-
-## 📊 Sample Data
-
-### User Object
 ```json
 {
   "_id": "64b1f7e8a9...",
   "username": "example",
   "email": "example@example.com",
   "password": "$2b$10$hashed_password...",
+  "googleId": "1078...",
   "wins": 15,
   "losses": 3,
   "isOnline": true,
-  "friends": [
-    { "_id": "64b2a...", "username": "PlayerTwo", "wins": 10 }
-  ],
+  "friends": ["64b2a98c123d..."],
   "createdAt": "2026-01-20T10:30:00Z"
 }
 ```
 
-## 📄 License
+Passwords are stored as bcrypt hashes with 10 salt rounds and are never returned to the client.
+The `password` field is optional so that Google users can be created without one.
 
-This project is open source and available under the [MIT License](LICENSE).
+## Deployment
 
-## 👤 Author
+The client is built with `vite build` and served as static files from Vercel. The server runs as a
+persistent Node process on Render and listens on `process.env.PORT`, which Socket.io requires in
+order to hold open connections.
 
-**David** - [GitHub Profile](https://github.com/Dav1d0501)
+## License
 
-## 🙏 Acknowledgments
-
-- [Socket.io Documentation](https://socket.io/docs/v4/)
+MIT
